@@ -13,6 +13,11 @@ const KNOWN_TOKENS: Record<string, { symbol: string; decimals: number; icon: str
   '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': { symbol: 'DAI', decimals: 18, icon: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png' },
 };
 
+// Type for EIP-1193 provider request
+interface ProviderRequest {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
+
 export interface Position {
   tokenId: string;
   token0: { address: string; symbol: string; icon: string };
@@ -27,7 +32,7 @@ export interface Position {
 }
 
 export const usePositions = () => {
-  const { address, isConnected } = useWalletContext();
+  const { address, isConnected, walletProvider } = useWalletContext();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
@@ -35,12 +40,11 @@ export const usePositions = () => {
   const [increasing, setIncreasing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const getProvider = useCallback(() => {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      return window.ethereum;
-    }
+  const getProvider = useCallback((): ProviderRequest | null => {
+    if (walletProvider) return walletProvider as unknown as ProviderRequest;
+    if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as ProviderRequest;
     return null;
-  }, []);
+  }, [walletProvider]);
 
   const getTokenInfo = (tokenAddress: string) => {
     const addr = tokenAddress.toLowerCase();
@@ -108,7 +112,7 @@ export const usePositions = () => {
   }, [address, isConnected, getProvider]);
 
   const fetchPositionByIndex = async (
-    provider: any,
+    provider: ProviderRequest,
     ownerAddress: string,
     index: number
   ): Promise<Position | null> => {

@@ -1,7 +1,18 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAppKitWallet } from '@/hooks/useAppKitWallet';
+import type { Eip1193Provider } from 'ethers';
 
-type WalletContextType = ReturnType<typeof useAppKitWallet>;
+interface WalletContextType {
+  isConnected: boolean;
+  address: string | null;
+  balance: string | null;
+  isConnecting: boolean;
+  error: string | null;
+  formattedAddress: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  walletProvider: Eip1193Provider | undefined;
+}
 
 const WalletContext = createContext<WalletContextType | null>(null);
 
@@ -14,7 +25,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useWalletContext = () => {
+export const useWalletContext = (): WalletContextType => {
   const context = useContext(WalletContext);
   if (!context) {
     throw new Error('useWalletContext must be used within a WalletProvider');

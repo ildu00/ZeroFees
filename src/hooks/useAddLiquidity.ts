@@ -39,20 +39,6 @@ export const BASE_TOKENS: Record<string, { address: string; decimals: number; ic
   },
 };
 
-// ERC20 ABI for approval
-const ERC20_ABI = [
-  'function approve(address spender, uint256 amount) returns (bool)',
-  'function allowance(address owner, address spender) view returns (uint256)',
-  'function balanceOf(address account) view returns (uint256)',
-  'function decimals() view returns (uint8)',
-];
-
-// NonfungiblePositionManager ABI (simplified for mint)
-const POSITION_MANAGER_ABI = [
-  'function mint((address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline)) payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)',
-  'function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96) payable returns (address pool)',
-];
-
 // Fee tiers available on Uniswap V3
 export const FEE_TIERS = [
   { value: 100, label: '0.01%', description: 'Best for stable pairs' },
@@ -81,18 +67,22 @@ interface MintParams {
   amount1Min: bigint;
 }
 
+// Type for EIP-1193 provider request
+interface ProviderRequest {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
+
 export const useAddLiquidity = () => {
-  const { address, isConnected } = useWalletContext();
+  const { address, isConnected, walletProvider } = useWalletContext();
   const [isApproving, setIsApproving] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
 
   // Get the Ethereum provider
-  const getProvider = useCallback(() => {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      return window.ethereum;
-    }
+  const getProvider = useCallback((): ProviderRequest | null => {
+    if (walletProvider) return walletProvider as unknown as ProviderRequest;
+    if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as ProviderRequest;
     return null;
-  }, []);
+  }, [walletProvider]);
 
   // Parse amount to wei based on decimals
   const parseAmount = useCallback((amount: string, decimals: number): bigint => {
@@ -171,7 +161,7 @@ export const useAddLiquidity = () => {
         receipt = await provider.request({
           method: 'eth_getTransactionReceipt',
           params: [txHash],
-        });
+        }) as { status: string } | null;
       }
 
       if (receipt.status === '0x1') {
@@ -225,7 +215,6 @@ export const useAddLiquidity = () => {
       const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
 
       // Encode mint params
-      // MintParams struct: (token0, token1, fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min, recipient, deadline)
       const mintData = encodeMintCall({
         token0,
         token1,
