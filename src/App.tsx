@@ -7,6 +7,7 @@ import { WalletProvider } from "./contexts/WalletContext";
 import Index from "./pages/Index";
 import Pools from "./pages/Pools";
 import Positions from "./pages/Positions";
+import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/pools" element={<Pools />} />
             <Route path="/positions" element={<Positions />} />
+            <Route path="/docs" element={<Docs />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
