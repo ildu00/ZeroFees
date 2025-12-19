@@ -230,6 +230,15 @@ export const useSwap = () => {
       const value = BigInt(amount).toString(16).padStart(64, '0');
       const data = `${ERC20_ABI.approve}${spender}${value}`;
 
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        toast.info('Confirm approval in MetaMask, then return here', {
+          id: 'mobile-wallet-pending',
+          duration: 60000,
+        });
+      }
+
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
@@ -238,6 +247,13 @@ export const useSwap = () => {
           data,
         }],
       });
+
+      toast.dismiss('mobile-wallet-pending');
+
+      // On mobile, try to refocus the browser after approval
+      if (isMobile && typeof txHash === 'string') {
+        setTimeout(() => window.focus(), 300);
+      }
 
       toast.success('Approval sent!', { description: 'Waiting for confirmation...' });
       
@@ -342,7 +358,17 @@ export const useSwap = () => {
         txData = `0x414bf389${tokenInAddr}${tokenOutAddr}${fee}${recipient}${deadlineHex}${amountInHex}${amountOutMinHex}${sqrtPrice}`;
       }
 
-      toast.info('Please confirm the swap in your wallet');
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // On mobile, show a toast that the user should return after confirming
+      if (isMobile) {
+        toast.info('Confirm in MetaMask, then return here', {
+          id: 'mobile-wallet-pending',
+          duration: 60000,
+        });
+      } else {
+        toast.info('Please confirm the swap in your wallet');
+      }
 
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
@@ -353,6 +379,14 @@ export const useSwap = () => {
           value,
         }],
       });
+
+      // Dismiss the "confirm" toast
+      toast.dismiss('mobile-wallet-pending');
+
+      // On mobile, try to refocus the browser after TX is sent
+      if (isMobile && typeof txHash === 'string') {
+        setTimeout(() => window.focus(), 300);
+      }
 
       toast.success('Swap submitted!', {
         description: 'Waiting for confirmation...',
