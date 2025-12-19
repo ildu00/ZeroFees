@@ -316,7 +316,15 @@ const SwapCard = () => {
 
         {/* Additional Info */}
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Slippage tolerance: {slippage}% • Powered by ReGraph
+          Slippage tolerance: {slippage}% • Powered by{' '}
+          <a
+            href="https://regraph.tech"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            ReGraph
+          </a>
         </p>
       </div>
 
