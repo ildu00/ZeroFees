@@ -92,7 +92,8 @@
 
   .token-selector {
     @apply flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl border border-border/30 
-           hover:bg-secondary/80 hover:border-border/50 transition-all duration-200 cursor-pointer;
+           hover:bg-secondary/80 hover:border-border/50 transition-all duration-200 cursor-pointer
+           whitespace-nowrap max-w-[140px];
   }
 
   .swap-arrow {

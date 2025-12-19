@@ -27,15 +27,15 @@ const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = fa
           onChange={(e) => onChange?.(e.target.value)}
           readOnly={readOnly}
           placeholder="0.0"
-          className="flex-1 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none"
+          className="flex-1 min-w-0 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none truncate"
         />
         
         <button 
           onClick={onTokenClick}
-          className="token-selector"
+          className="token-selector shrink-0"
         >
-          <span className="text-xl">{token.icon}</span>
-          <span className="font-medium">{token.symbol}</span>
+          <span className="text-lg">{token.icon}</span>
+          <span className="font-medium text-sm">{token.symbol}</span>
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
