@@ -30,7 +30,7 @@ const SwapCard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectingFor, setSelectingFor] = useState<"from" | "to">("from");
-  const [slippage, setSlippage] = useState(0.5);
+  const [slippage, setSlippage] = useState(0.1);
   const [deadline, setDeadline] = useState(30); // 30 minutes default
 
   // Update token prices when prices change
@@ -253,7 +253,7 @@ const SwapCard = () => {
 
         {/* Additional Info */}
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Slippage tolerance: {slippage}% • Powered by Uniswap V3
+          Slippage tolerance: {slippage}% • Powered by ReGraph
         </p>
       </div>
 
