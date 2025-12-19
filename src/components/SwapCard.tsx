@@ -3,6 +3,7 @@ import { ArrowDownUp, Settings, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TokenInput from "./TokenInput";
 import TokenSelectModal, { Token } from "./TokenSelectModal";
+import SlippageSettingsModal from "./SlippageSettingsModal";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { toast } from "sonner";
@@ -27,8 +28,10 @@ const SwapCard = () => {
   const [fromToken, setFromToken] = useState<Token>(baseTokensList[0]); // ETH
   const [toToken, setToToken] = useState<Token>(baseTokensList[2]); // USDC
   const [modalOpen, setModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectingFor, setSelectingFor] = useState<"from" | "to">("from");
   const [slippage, setSlippage] = useState(0.5);
+  const [deadline, setDeadline] = useState(30); // 30 minutes default
 
   // Update token prices when prices change
   useEffect(() => {
@@ -153,7 +156,10 @@ const SwapCard = () => {
               Base
             </span>
           </div>
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <button 
+            onClick={() => setSettingsOpen(true)}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          >
             <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -258,6 +264,16 @@ const SwapCard = () => {
         onSelect={handleSelectToken}
         selectedToken={selectingFor === "from" ? fromToken : toToken}
         tokens={baseTokensList}
+      />
+
+      {/* Slippage Settings Modal */}
+      <SlippageSettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        slippage={slippage}
+        onSlippageChange={setSlippage}
+        deadline={deadline}
+        onDeadlineChange={setDeadline}
       />
     </>
   );
