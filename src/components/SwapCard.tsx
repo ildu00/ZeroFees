@@ -21,7 +21,7 @@ const baseTokensList: Token[] = Object.values(BASE_TOKENS).map(t => ({
 
 const SwapCard = () => {
   const { isConnected, connect, isConnecting } = useWalletContext();
-  const { prices, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = useSwap();
+  const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = useSwap();
   
   const [fromValue, setFromValue] = useState("");
   const [toValue, setToValue] = useState("");
@@ -33,13 +33,21 @@ const SwapCard = () => {
   const [slippage, setSlippage] = useState(0.1);
   const [deadline, setDeadline] = useState(30); // 30 minutes default
 
-  // Update token prices when prices change
+  // Update token prices and balances when they change
   useEffect(() => {
-    if (Object.keys(prices).length > 0) {
-      setFromToken(prev => ({ ...prev, price: prices[prev.symbol] || 0 }));
-      setToToken(prev => ({ ...prev, price: prices[prev.symbol] || 0 }));
+    if (Object.keys(prices).length > 0 || Object.keys(balances).length > 0) {
+      setFromToken(prev => ({ 
+        ...prev, 
+        price: prices[prev.symbol] || 0,
+        balance: balances[prev.symbol] || "0"
+      }));
+      setToToken(prev => ({ 
+        ...prev, 
+        price: prices[prev.symbol] || 0,
+        balance: balances[prev.symbol] || "0"
+      }));
     }
-  }, [prices]);
+  }, [prices, balances]);
 
   // Fetch quote when input changes
   useEffect(() => {
@@ -84,18 +92,22 @@ const SwapCard = () => {
     const baseToken = baseTokensList.find(t => t.symbol === token.symbol);
     if (!baseToken) return;
 
-    const tokenWithPrice = { ...baseToken, price: prices[token.symbol] || 0 };
+    const tokenWithData = { 
+      ...baseToken, 
+      price: prices[token.symbol] || 0,
+      balance: balances[token.symbol] || "0"
+    };
 
     if (selectingFor === "from") {
       if (token.symbol === toToken.symbol) {
         setToToken(fromToken);
       }
-      setFromToken(tokenWithPrice);
+      setFromToken(tokenWithData);
     } else {
       if (token.symbol === fromToken.symbol) {
         setFromToken(toToken);
       }
-      setToToken(tokenWithPrice);
+      setToToken(tokenWithData);
     }
   };
 

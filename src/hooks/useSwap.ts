@@ -27,10 +27,11 @@ export const BASE_TOKENS = {
 // Uniswap V3 SwapRouter02 on Base
 const SWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
 
-// ERC20 approve ABI
+// ERC20 ABI selectors
 const ERC20_ABI = {
   approve: '0x095ea7b3',
   allowance: '0xdd62ed3e',
+  balanceOf: '0x70a08231',
 };
 
 export interface SwapQuote {
@@ -45,10 +46,16 @@ export interface TokenPrices {
   [key: string]: number;
 }
 
+export interface TokenBalances {
+  [key: string]: string;
+}
+
 export const useSwap = () => {
   const { address, isConnected } = useWalletContext();
   const [prices, setPrices] = useState<TokenPrices>({});
+  const [balances, setBalances] = useState<TokenBalances>({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<SwapQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -69,6 +76,66 @@ export const useSwap = () => {
       setIsLoadingPrices(false);
     }
   }, []);
+
+  // Fetch token balances from wallet
+  const fetchBalances = useCallback(async () => {
+    if (!address || !window.ethereum) {
+      setBalances({});
+      return;
+    }
+
+    setIsLoadingBalances(true);
+    try {
+      const newBalances: TokenBalances = {};
+      
+      // Check if on Base network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== BASE_CHAIN_CONFIG.chainId) {
+        // Not on Base, show empty balances
+        setBalances({});
+        setIsLoadingBalances(false);
+        return;
+      }
+
+      // Fetch ETH balance
+      const ethBalance = await window.ethereum.request({
+        method: 'eth_getBalance',
+        params: [address, 'latest'],
+      }) as string;
+      newBalances['ETH'] = (Number(BigInt(ethBalance)) / 1e18).toFixed(6);
+
+      // Fetch ERC20 balances
+      const tokens = Object.entries(BASE_TOKENS).filter(([symbol]) => symbol !== 'ETH');
+      
+      await Promise.all(tokens.map(async ([symbol, token]) => {
+        try {
+          const paddedAddress = address.toLowerCase().replace('0x', '').padStart(64, '0');
+          const data = `${ERC20_ABI.balanceOf}${paddedAddress}`;
+          
+          const result = await window.ethereum!.request({
+            method: 'eth_call',
+            params: [{ to: token.address, data }, 'latest'],
+          }) as string;
+          
+          if (result && result !== '0x') {
+            const balance = Number(BigInt(result)) / Math.pow(10, token.decimals);
+            newBalances[symbol] = balance.toFixed(6);
+          } else {
+            newBalances[symbol] = '0';
+          }
+        } catch (err) {
+          console.error(`Error fetching ${symbol} balance:`, err);
+          newBalances[symbol] = '0';
+        }
+      }));
+
+      setBalances(newBalances);
+    } catch (error) {
+      console.error('Error fetching balances:', error);
+    } finally {
+      setIsLoadingBalances(false);
+    }
+  }, [address]);
 
   // Fetch quote
   const fetchQuote = useCallback(async (
@@ -300,13 +367,25 @@ export const useSwap = () => {
     return () => clearInterval(interval);
   }, [fetchPrices]);
 
+  // Fetch balances when address changes or on mount
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchBalances();
+      const interval = setInterval(fetchBalances, 15000); // Refresh every 15s
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, address, fetchBalances]);
+
   return {
     prices,
+    balances,
     isLoadingPrices,
+    isLoadingBalances,
     quote,
     isLoadingQuote,
     isSwapping,
     fetchQuote,
+    fetchBalances,
     executeSwap,
     switchToBase,
     BASE_TOKENS,
