@@ -7,8 +7,7 @@ const Header = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-8">
           <NavLink to="/" className="text-xl font-bold tracking-tight">
-            <span className="text-gradient">SWAP</span>
-            <span className="text-muted-foreground">.fi</span>
+            <span className="text-gradient">Zero Fees</span>
           </NavLink>
           
           <nav className="hidden md:flex items-center gap-6">
