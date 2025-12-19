@@ -3,7 +3,7 @@ import { X, Plus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { toast } from "sonner";
-import type { Pool } from "./PoolsList";
+import type { Pool } from "@/hooks/useUniswapPools";
 
 interface AddLiquidityModalProps {
   open: boolean;

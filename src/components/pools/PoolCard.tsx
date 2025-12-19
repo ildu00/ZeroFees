@@ -1,6 +1,6 @@
 import { ArrowUpRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Pool } from "./PoolsList";
+import type { Pool } from "@/hooks/useUniswapPools";
 
 interface PoolCardProps {
   pool: Pool;
@@ -36,7 +36,7 @@ const PoolCard = ({ pool, onAddLiquidity }: PoolCardProps) => {
             <h3 className="font-semibold">
               {pool.token0.symbol}/{pool.token1.symbol}
             </h3>
-            <p className="text-xs text-muted-foreground">0.3% fee tier</p>
+            <p className="text-xs text-muted-foreground">{pool.feeTier ? `${pool.feeTier}%` : '0.3%'} fee tier</p>
           </div>
         </div>
         <div className="flex items-center gap-1 text-primary text-sm font-medium">
@@ -87,7 +87,7 @@ const PoolCard = ({ pool, onAddLiquidity }: PoolCardProps) => {
           variant="glass" 
           size="icon" 
           className="shrink-0"
-          onClick={() => window.open(`https://etherscan.io/address/${pool.id}`, '_blank')}
+          onClick={() => window.open(`https://basescan.org/address/${pool.id}`, '_blank')}
         >
           <ArrowUpRight className="w-4 h-4" />
         </Button>
