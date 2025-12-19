@@ -11,13 +11,38 @@ interface TokenInputProps {
 }
 
 const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = false }: TokenInputProps) => {
+  const handleMaxClick = () => {
+    if (onChange && token.balance) {
+      // Parse the balance and set it, leaving a small amount for gas if it's ETH
+      const balance = parseFloat(token.balance);
+      if (token.symbol === 'ETH' && balance > 0.001) {
+        // Leave 0.001 ETH for gas
+        onChange((balance - 0.001).toFixed(6));
+      } else {
+        onChange(balance.toString());
+      }
+    }
+  };
+
+  const hasBalance = token.balance && parseFloat(token.balance) > 0;
+
   return (
     <div className="glass-input p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
-        <span className="text-xs text-muted-foreground">
-          Balance: <span className="text-foreground">{token.balance}</span>
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            Balance: <span className="text-foreground">{token.balance || "0"}</span>
+          </span>
+          {!readOnly && hasBalance && (
+            <button
+              onClick={handleMaxClick}
+              className="px-1.5 py-0.5 text-[10px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors"
+            >
+              MAX
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="flex items-center gap-3">
