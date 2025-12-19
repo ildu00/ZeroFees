@@ -5,17 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Base Mainnet RPC
-const BASE_RPC = "https://mainnet.base.org";
-
-// Known DEX router addresses on Base (lowercase)
-const DEX_ROUTERS = new Set([
-  "0x2626664c2603336e57b271c5c0b26f421741e481", // Uniswap V3 SwapRouter02
-  "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad", // Uniswap Universal Router
-  "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome Router
-  "0x6131b5fae19ea4f9d964eac0408e4408b66337b5", // KyberSwap
-  "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae", // LiFi Diamond
-]);
+// Multiple Base RPC endpoints for failover
+const BASE_RPCS = [
+  "https://base.llamarpc.com",
+  "https://base.drpc.org",
+  "https://base-rpc.publicnode.com",
+  "https://mainnet.base.org",
+];
 
 // Common token addresses on Base
 const TOKEN_INFO: Record<string, { symbol: string; decimals: number }> = {
@@ -27,15 +23,10 @@ const TOKEN_INFO: Record<string, { symbol: string; decimals: number }> = {
   "0x940181a94a35a4569e4529a3cdfb74e38fd98631": { symbol: "AERO", decimals: 18 },
   "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b": { symbol: "VIRTUAL", decimals: 18 },
   "0x532f27101965dd16442e59d40670faf5ebb142e4": { symbol: "BRETT", decimals: 18 },
-  "0xac1bd2486aaf3b5c0fc3fd868558b082a531b2b4": { symbol: "TOSHI", decimals: 18 },
 };
 
 // ERC20 Transfer event signature
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-
-// WETH Deposit/Withdrawal signatures
-const WETH_DEPOSIT_TOPIC = "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c";
-const WETH_WITHDRAWAL_TOPIC = "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65";
 
 interface Transaction {
   id: string;
@@ -49,41 +40,55 @@ interface Transaction {
   blockNumber: number;
 }
 
-async function rpcCall(method: string, params: any[]): Promise<any> {
-  const response = await fetch(BASE_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method,
-      params,
-    }),
-  });
-  const data = await response.json();
-  if (data.error) {
-    console.error("RPC error:", data.error);
-    throw new Error(data.error.message);
+async function rpcCallWithFallback(method: string, params: any[]): Promise<any> {
+  let lastError: Error | null = null;
+  
+  for (const rpc of BASE_RPCS) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      
+      const response = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method,
+          params,
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+      
+      return data.result;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.log(`RPC ${rpc} failed: ${lastError.message}, trying next...`);
+    }
   }
-  return data.result;
+  
+  throw lastError || new Error("All RPC endpoints failed");
 }
 
 async function getLatestBlock(): Promise<number> {
-  const result = await rpcCall('eth_blockNumber', []);
+  const result = await rpcCallWithFallback('eth_blockNumber', []);
   return parseInt(result, 16);
 }
 
 async function getBlockTimestamp(blockNumber: string): Promise<number> {
-  const block = await rpcCall('eth_getBlockByNumber', [blockNumber, false]);
+  const block = await rpcCallWithFallback('eth_getBlockByNumber', [blockNumber, false]);
   return parseInt(block.timestamp, 16);
-}
-
-async function getTransactionReceipt(txHash: string): Promise<any> {
-  return await rpcCall('eth_getTransactionReceipt', [txHash]);
-}
-
-async function getTransaction(txHash: string): Promise<any> {
-  return await rpcCall('eth_getTransactionByHash', [txHash]);
 }
 
 function formatAmount(hexData: string, decimals: number): string {
@@ -109,12 +114,16 @@ function padAddress(address: string): string {
   return "0x" + address.toLowerCase().slice(2).padStart(64, '0');
 }
 
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
   console.log(`Fetching swaps for wallet: ${walletAddress}`);
   
   const latestBlock = await getLatestBlock();
-  // Look back ~7 days (assuming ~2 sec blocks on Base = ~300k blocks)
-  const fromBlock = Math.max(0, latestBlock - 300000);
+  // Look back ~1 day only (assuming ~2 sec blocks = ~43200 blocks)
+  const fromBlock = Math.max(0, latestBlock - 43200);
   
   const paddedAddress = padAddress(walletAddress);
   
@@ -122,19 +131,23 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
   
   // Get Transfer events where wallet is sender or receiver
   const [logsFrom, logsTo] = await Promise.all([
-    rpcCall('eth_getLogs', [{
+    rpcCallWithFallback('eth_getLogs', [{
       fromBlock: "0x" + fromBlock.toString(16),
       toBlock: "latest",
       topics: [TRANSFER_TOPIC, paddedAddress, null],
     }]),
-    rpcCall('eth_getLogs', [{
+    rpcCallWithFallback('eth_getLogs', [{
       fromBlock: "0x" + fromBlock.toString(16),
       toBlock: "latest",
       topics: [TRANSFER_TOPIC, null, paddedAddress],
     }]),
   ]);
 
-  console.log(`Found ${logsFrom.length} outgoing transfers, ${logsTo.length} incoming transfers`);
+  console.log(`Found ${logsFrom?.length || 0} outgoing, ${logsTo?.length || 0} incoming transfers`);
+
+  if (!logsFrom || !logsTo) {
+    return [];
+  }
 
   // Group logs by transaction hash
   const txMap = new Map<string, { from: any[], to: any[], blockNumber: string }>();
@@ -157,26 +170,20 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
   const potentialSwaps = Array.from(txMap.entries())
     .filter(([_, data]) => data.from.length > 0 && data.to.length > 0)
     .sort((a, b) => parseInt(b[1].blockNumber, 16) - parseInt(a[1].blockNumber, 16))
-    .slice(0, 20); // Limit to 20 most recent
+    .slice(0, 10);
 
   console.log(`Found ${potentialSwaps.length} potential swap transactions`);
 
   const transactions: Transaction[] = [];
-  const processedHashes = new Set<string>();
 
   for (const [txHash, data] of potentialSwaps) {
-    if (processedHashes.has(txHash)) continue;
-    processedHashes.add(txHash);
-
     try {
-      // Get the first outgoing and first incoming transfer
       const fromLog = data.from[0];
       const toLog = data.to[0];
 
       const fromTokenAddr = fromLog.address.toLowerCase();
       const toTokenAddr = toLog.address.toLowerCase();
 
-      // Skip if same token (not a swap)
       if (fromTokenAddr === toTokenAddr) continue;
 
       const fromTokenInfo = TOKEN_INFO[fromTokenAddr] || { symbol: shortenAddress(fromLog.address), decimals: 18 };
@@ -185,7 +192,6 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
       const fromAmount = formatAmount(fromLog.data, fromTokenInfo.decimals);
       const toAmount = formatAmount(toLog.data, toTokenInfo.decimals);
 
-      // Get block timestamp
       const timestamp = await getBlockTimestamp(data.blockNumber);
 
       transactions.push({
@@ -199,9 +205,6 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
         timestamp: new Date(timestamp * 1000),
         blockNumber: parseInt(data.blockNumber, 16),
       });
-
-      // Limit to 10 transactions
-      if (transactions.length >= 10) break;
       
     } catch (err) {
       console.error(`Error processing tx ${txHash}:`, err);
@@ -212,12 +215,7 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
   return transactions;
 }
 
-function shortenAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
