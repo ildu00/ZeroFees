@@ -4,9 +4,10 @@ import BackgroundEffects from "@/components/BackgroundEffects";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus } from "lucide-react";
+import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import RemoveLiquidityModal from "@/components/positions/RemoveLiquidityModal";
+import IncreaseLiquidityModal from "@/components/positions/IncreaseLiquidityModal";
 
 const formatLiquidity = (liquidity: string): string => {
   const num = BigInt(liquidity);
@@ -23,13 +24,15 @@ interface PositionCardProps {
   position: Position;
   onCollect: (tokenId: string) => void;
   onRemove: (position: Position) => void;
+  onIncrease: (position: Position) => void;
   isCollecting: boolean;
   isRemoving: boolean;
+  isIncreasing: boolean;
 }
 
-const PositionCard = ({ position, onCollect, onRemove, isCollecting, isRemoving }: PositionCardProps) => {
+const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting, isRemoving, isIncreasing }: PositionCardProps) => {
   const hasFees = position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0';
-  const isLoading = isCollecting || isRemoving;
+  const isLoading = isCollecting || isRemoving || isIncreasing;
   
   return (
     <div className="glass-card p-5 hover:border-primary/30 transition-all duration-300">
@@ -124,6 +127,21 @@ const PositionCard = ({ position, onCollect, onRemove, isCollecting, isRemoving 
           variant="glass" 
           size="sm"
           disabled={isLoading}
+          onClick={() => onIncrease(position)}
+        >
+          {isIncreasing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-1" />
+              Add
+            </>
+          )}
+        </Button>
+        <Button 
+          variant="glass" 
+          size="sm"
+          disabled={isLoading}
           onClick={() => onRemove(position)}
         >
           {isRemoving ? (
@@ -150,8 +168,9 @@ const PositionCard = ({ position, onCollect, onRemove, isCollecting, isRemoving 
 
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
-  const { positions, loading, collecting, removing, error, refetch, collectFees, removeLiquidity } = usePositions();
+  const { positions, loading, collecting, removing, increasing, error, refetch, collectFees, removeLiquidity, increaseLiquidity } = usePositions();
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
   const handleCollect = async (tokenId: string) => {
@@ -163,8 +182,17 @@ const Positions = () => {
     setRemoveModalOpen(true);
   };
 
+  const handleOpenIncreaseModal = (position: Position) => {
+    setSelectedPosition(position);
+    setIncreaseModalOpen(true);
+  };
+
   const handleRemoveLiquidity = async (tokenId: string, liquidity: string, percent: number) => {
     return await removeLiquidity(tokenId, liquidity, percent);
+  };
+
+  const handleIncreaseLiquidity = async (tokenId: string, token0Address: string, token1Address: string, amount0: string, amount1: string) => {
+    return await increaseLiquidity(tokenId, token0Address, token1Address, amount0, amount1);
   };
 
   return (
@@ -281,8 +309,10 @@ const Positions = () => {
                       position={position} 
                       onCollect={handleCollect}
                       onRemove={handleOpenRemoveModal}
+                      onIncrease={handleOpenIncreaseModal}
                       isCollecting={collecting === position.tokenId}
                       isRemoving={removing === position.tokenId}
+                      isIncreasing={increasing === position.tokenId}
                     />
                   ))}
                 </div>
@@ -312,6 +342,15 @@ const Positions = () => {
         position={selectedPosition}
         onRemove={handleRemoveLiquidity}
         isRemoving={removing !== null}
+      />
+
+      {/* Increase Liquidity Modal */}
+      <IncreaseLiquidityModal
+        open={increaseModalOpen}
+        onClose={() => setIncreaseModalOpen(false)}
+        position={selectedPosition}
+        onIncrease={handleIncreaseLiquidity}
+        isIncreasing={increasing !== null}
       />
     </div>
   );

@@ -32,6 +32,7 @@ export const usePositions = () => {
   const [loading, setLoading] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [increasing, setIncreasing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const getProvider = useCallback(() => {
@@ -338,6 +339,103 @@ export const usePositions = () => {
     }
   }, [address, getProvider, fetchPositions]);
 
+  // Increase liquidity for a position
+  const increaseLiquidity = useCallback(async (
+    tokenId: string,
+    token0Address: string,
+    token1Address: string,
+    amount0: string,
+    amount1: string
+  ): Promise<boolean> => {
+    const provider = getProvider();
+    if (!provider || !address) {
+      toast.error("Wallet not connected");
+      return false;
+    }
+
+    try {
+      setIncreasing(tokenId);
+      toast.loading("Approving tokens...", { id: `increase-${tokenId}` });
+
+      // First approve both tokens
+      const approveAmount = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      
+      // Approve token0
+      if (amount0 !== '0') {
+        const approveData0 = encodeApproveCall(NONFUNGIBLE_POSITION_MANAGER, approveAmount);
+        await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to: token0Address,
+            data: approveData0,
+          }],
+        });
+      }
+
+      // Approve token1
+      if (amount1 !== '0') {
+        const approveData1 = encodeApproveCall(NONFUNGIBLE_POSITION_MANAGER, approveAmount);
+        await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to: token1Address,
+            data: approveData1,
+          }],
+        });
+      }
+
+      toast.loading("Increasing liquidity...", { id: `increase-${tokenId}` });
+
+      const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
+
+      // increaseLiquidity((uint256 tokenId, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, uint256 deadline))
+      const increaseData = encodeIncreaseLiquidityCall({
+        tokenId: BigInt(tokenId),
+        amount0Desired: BigInt(amount0),
+        amount1Desired: BigInt(amount1),
+        amount0Min: BigInt(0), // Accept any slippage for simplicity
+        amount1Min: BigInt(0),
+        deadline: BigInt(deadline),
+      });
+
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address,
+          to: NONFUNGIBLE_POSITION_MANAGER,
+          data: increaseData,
+        }],
+      }) as string;
+
+      // Wait for confirmation
+      let receipt: { status: string } | null = null;
+      while (!receipt) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        receipt = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash],
+        }) as { status: string } | null;
+      }
+
+      if (receipt.status === '0x1') {
+        toast.success("Liquidity increased successfully!", { id: `increase-${tokenId}` });
+        await fetchPositions();
+        return true;
+      } else {
+        toast.error("Transaction failed", { id: `increase-${tokenId}` });
+        return false;
+      }
+    } catch (err: any) {
+      console.error("Increase liquidity error:", err);
+      toast.error(err.message || "Failed to increase liquidity", { id: `increase-${tokenId}` });
+      return false;
+    } finally {
+      setIncreasing(null);
+    }
+  }, [address, getProvider, fetchPositions]);
+
   useEffect(() => {
     if (isConnected && address) {
       fetchPositions();
@@ -351,10 +449,12 @@ export const usePositions = () => {
     loading,
     collecting,
     removing,
+    increasing,
     error,
     refetch: fetchPositions,
     collectFees,
     removeLiquidity,
+    increaseLiquidity,
   };
 };
 
@@ -403,4 +503,35 @@ function encodeDecreaseLiquidityCall(params: {
   const deadline = params.deadline.toString(16).padStart(64, '0');
   
   return selector + tokenId + liquidity + amount0Min + amount1Min + deadline;
+}
+
+// Encode increaseLiquidity function call
+function encodeIncreaseLiquidityCall(params: {
+  tokenId: bigint;
+  amount0Desired: bigint;
+  amount1Desired: bigint;
+  amount0Min: bigint;
+  amount1Min: bigint;
+  deadline: bigint;
+}): string {
+  // Function selector for increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))
+  const selector = '0x219f5d17';
+  
+  const tokenId = params.tokenId.toString(16).padStart(64, '0');
+  const amount0Desired = params.amount0Desired.toString(16).padStart(64, '0');
+  const amount1Desired = params.amount1Desired.toString(16).padStart(64, '0');
+  const amount0Min = params.amount0Min.toString(16).padStart(64, '0');
+  const amount1Min = params.amount1Min.toString(16).padStart(64, '0');
+  const deadline = params.deadline.toString(16).padStart(64, '0');
+  
+  return selector + tokenId + amount0Desired + amount1Desired + amount0Min + amount1Min + deadline;
+}
+
+// Encode ERC20 approve function call
+function encodeApproveCall(spender: string, amount: bigint): string {
+  // Function selector for approve(address,uint256)
+  const selector = '0x095ea7b3';
+  const spenderPadded = spender.slice(2).toLowerCase().padStart(64, '0');
+  const amountPadded = amount.toString(16).padStart(64, '0');
+  return selector + spenderPadded + amountPadded;
 }
