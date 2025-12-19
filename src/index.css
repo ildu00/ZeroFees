@@ -160,3 +160,21 @@
     box-shadow: 0 0 40px hsl(180 70% 50% / 0.25);
   }
 }
+
+/* Hide AppKit/Reown branding */
+w3m-modal {
+  --w3m-z-index: 9999;
+}
+
+w3m-legal-footer,
+wui-legal-footer,
+w3m-legal-checkbox,
+[data-testid="w3m-legal-footer"],
+[data-testid="wui-legal-footer"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
