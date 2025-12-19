@@ -3,7 +3,7 @@ import BackgroundEffects from "@/components/BackgroundEffects";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle } from "lucide-react";
+import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const formatLiquidity = (liquidity: string): string => {
@@ -17,7 +17,15 @@ const formatLiquidity = (liquidity: string): string => {
   return liquidity;
 };
 
-const PositionCard = ({ position }: { position: Position }) => {
+interface PositionCardProps {
+  position: Position;
+  onCollect: (tokenId: string) => void;
+  isCollecting: boolean;
+}
+
+const PositionCard = ({ position, onCollect, isCollecting }: PositionCardProps) => {
+  const hasFees = position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0';
+  
   return (
     <div className="glass-card p-5 hover:border-primary/30 transition-all duration-300">
       {/* Header */}
@@ -72,7 +80,7 @@ const PositionCard = ({ position }: { position: Position }) => {
       </div>
 
       {/* Unclaimed Fees */}
-      {(position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0') && (
+      {hasFees && (
         <div className="p-3 bg-primary/10 rounded-xl mb-4 border border-primary/20">
           <p className="text-xs text-muted-foreground mb-1">Unclaimed Fees</p>
           <div className="flex gap-4 text-sm">
@@ -88,15 +96,30 @@ const PositionCard = ({ position }: { position: Position }) => {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <Button variant="glass" className="flex-1" size="sm" disabled>
-          <TrendingUp className="w-4 h-4 mr-1" />
-          Collect Fees
+        <Button 
+          variant={hasFees ? "glow" : "glass"} 
+          className="flex-1" 
+          size="sm" 
+          disabled={!hasFees || isCollecting}
+          onClick={() => onCollect(position.tokenId)}
+        >
+          {isCollecting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              Collecting...
+            </>
+          ) : (
+            <>
+              <TrendingUp className="w-4 h-4 mr-1" />
+              Collect Fees
+            </>
+          )}
         </Button>
         <Button 
           variant="glass" 
           size="icon" 
           className="shrink-0"
-          onClick={() => window.open(`https://basescan.org/token/${position.tokenId}`, '_blank')}
+          onClick={() => window.open(`https://basescan.org/nft/0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1/${position.tokenId}`, '_blank')}
         >
           <ExternalLink className="w-4 h-4" />
         </Button>
@@ -107,7 +130,11 @@ const PositionCard = ({ position }: { position: Position }) => {
 
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
-  const { positions, loading, error, refetch } = usePositions();
+  const { positions, loading, collecting, error, refetch, collectFees } = usePositions();
+
+  const handleCollect = async (tokenId: string) => {
+    await collectFees(tokenId);
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -218,7 +245,12 @@ const Positions = () => {
               {!loading && positions.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {positions.map((position) => (
-                    <PositionCard key={position.tokenId} position={position} />
+                    <PositionCard 
+                      key={position.tokenId} 
+                      position={position} 
+                      onCollect={handleCollect}
+                      isCollecting={collecting === position.tokenId}
+                    />
                   ))}
                 </div>
               )}
