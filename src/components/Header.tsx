@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
+import WalletButton from "./WalletButton";
 
 const Header = () => {
   return (
@@ -18,10 +17,7 @@ const Header = () => {
           </nav>
         </div>
         
-        <Button variant="glass" size="sm" className="gap-2">
-          <Wallet className="w-4 h-4" />
-          <span className="hidden sm:inline">Connect Wallet</span>
-        </Button>
+        <WalletButton />
       </div>
     </header>
   );
