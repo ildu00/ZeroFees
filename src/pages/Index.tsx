@@ -50,7 +50,7 @@ const Index = () => {
               <a href="#" className="hover:text-foreground transition-colors">Discord</a>
             </div>
             <p className="mt-6 text-xs text-muted-foreground/50">
-              © 2024 SWAP.fi — Decentralized Exchange Protocol
+              © 2025 zerofees.online
             </p>
           </footer>
         </div>
