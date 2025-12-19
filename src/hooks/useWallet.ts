@@ -19,6 +19,16 @@ interface WalletState {
   error: string | null;
 }
 
+const isMobile = (): boolean => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+const openMetaMaskDeepLink = () => {
+  const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+  const deepLink = `https://metamask.app.link/dapp/${currentUrl}`;
+  window.location.href = deepLink;
+};
+
 export const useWallet = () => {
   const [state, setState] = useState<WalletState>({
     isConnected: false,
@@ -51,7 +61,12 @@ export const useWallet = () => {
   }, []);
 
   const connect = useCallback(async () => {
-    if (!window.ethereum?.isMetaMask) {
+    // If no ethereum provider and on mobile, open MetaMask app
+    if (!window.ethereum) {
+      if (isMobile()) {
+        openMetaMaskDeepLink();
+        return;
+      }
       setState(prev => ({ ...prev, error: 'Please install MetaMask' }));
       window.open('https://metamask.io/download/', '_blank');
       return;
