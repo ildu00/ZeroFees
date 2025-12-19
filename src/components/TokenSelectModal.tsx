@@ -172,7 +172,7 @@ const TokenSelectModal = ({
         {/* Footer */}
         <div className="p-4 border-t border-border/30 text-center">
           <p className="text-xs text-muted-foreground">
-            Trading on Base via Uniswap V3
+            Trading on Base via ReGraph
           </p>
         </div>
       </div>
