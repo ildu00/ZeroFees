@@ -43,10 +43,17 @@ export const appkit = createAppKit({
 // Hide branding elements in AppKit modal (Shadow DOM)
 // Keep this conservative to avoid accidentally hiding the wallet list UI.
 if (typeof window !== 'undefined') {
-  const BRAND_LINE_PATTERNS = [
-    /^\s*ux by\s+reown\s*$/i,
-    /^\s*powered by\s+reown\s*$/i,
-  ];
+  const isBrandText = (t: string) => {
+    const text = t.trim();
+    if (!text) return false;
+    // Keep short to avoid matching whole modal sections.
+    if (text.length > 80) return false;
+
+    const lower = text.toLowerCase();
+    const hasPrefix = lower.includes('ux by') || lower.includes('powered by');
+    const hasBrand = lower.includes('reown');
+    return hasPrefix && hasBrand;
+  };
 
   const hideReownBrandingOnce = () => {
     const modal = document.querySelector('w3m-modal') as any;
@@ -81,8 +88,8 @@ if (typeof window !== 'undefined') {
         }
       });
 
-      // Text-based: only hide an element whose *direct* text matches the brand line.
-      // This prevents hiding parent containers that include wallet list text.
+      // Text-based: find a small node that contains the branding line.
+      // Heuristics are important to avoid hiding connector list containers.
       try {
         node.querySelectorAll('*').forEach((el) => {
           const directText = Array.from(el.childNodes)
@@ -91,7 +98,19 @@ if (typeof window !== 'undefined') {
             .join('')
             .trim();
 
-          if (directText && BRAND_LINE_PATTERNS.some((re) => re.test(directText))) {
+          const fullText = (el.textContent || '').trim();
+          const candidateText = directText || fullText;
+
+          // Ignore any container-ish nodes.
+          const descendantCount = el.querySelectorAll('*').length;
+          const hasInteractive =
+            el.querySelectorAll('button,a,input,select,textarea').length > 0;
+
+          if (
+            !hasInteractive &&
+            descendantCount < 12 &&
+            isBrandText(candidateText)
+          ) {
             hideEl(el);
           }
 
@@ -113,11 +132,15 @@ if (typeof window !== 'undefined') {
       if (performance.now() - start < ms) requestAnimationFrame(tick);
     };
     tick();
+
+    // Also do a couple delayed passes (sometimes footer mounts late)
+    setTimeout(hideReownBrandingOnce, 1500);
+    setTimeout(hideReownBrandingOnce, 3500);
   };
 
-  // Only run on modal open; no global MutationObserver (it was hiding wallet list).
+  // Only run on modal open; no global MutationObserver (it can hide wallet list).
   appkit.subscribeEvents((event: any) => {
-    if (event.data?.event === 'MODAL_OPEN') runFor(1500);
+    if (event.data?.event === 'MODAL_OPEN') runFor(6000);
   });
 }
 
