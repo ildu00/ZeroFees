@@ -213,22 +213,24 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 <span className="text-xs text-muted-foreground">Min Price</span>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   value={priceLower}
                   onChange={(e) => setPriceLower(e.target.value)}
                   placeholder="0.0"
                   disabled={isLoading}
-                  className="border-0 bg-transparent p-0 text-lg font-medium h-auto focus-visible:ring-0"
+                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0"
                 />
               </div>
               <div className="glass-input p-3">
                 <span className="text-xs text-muted-foreground">Max Price</span>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   value={priceUpper}
                   onChange={(e) => setPriceUpper(e.target.value)}
                   placeholder="0.0"
                   disabled={isLoading}
-                  className="border-0 bg-transparent p-0 text-lg font-medium h-auto focus-visible:ring-0"
+                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -242,11 +244,12 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
             <div className="flex items-center gap-3">
               <Input
                 type="number"
+                inputMode="decimal"
                 value={amount0}
                 onChange={(e) => setAmount0(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
-                className="flex-1 border-0 bg-transparent text-2xl font-medium h-auto p-0 focus-visible:ring-0"
+                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
               />
               <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
                 <img
@@ -274,11 +277,12 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
             <div className="flex items-center gap-3">
               <Input
                 type="number"
+                inputMode="decimal"
                 value={amount1}
                 onChange={(e) => setAmount1(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
-                className="flex-1 border-0 bg-transparent text-2xl font-medium h-auto p-0 focus-visible:ring-0"
+                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
               />
               <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
                 <img
@@ -305,11 +309,12 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
               <label className="text-xs text-muted-foreground mb-1 block">Slippage Tolerance (%)</label>
               <Input
                 type="number"
+                inputMode="decimal"
                 value={slippage}
                 onChange={(e) => setSlippage(e.target.value)}
                 placeholder="0.5"
                 disabled={isLoading}
-                className="bg-transparent border-0 p-0 h-auto focus-visible:ring-0"
+                className="bg-transparent border-0 p-0 h-auto text-base focus-visible:ring-0"
               />
             </div>
           )}

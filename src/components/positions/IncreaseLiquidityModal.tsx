@@ -120,10 +120,11 @@ const IncreaseLiquidityModal = ({
             </label>
             <Input
               type="number"
+              inputMode="decimal"
               placeholder="0.0"
               value={amount0}
               onChange={(e) => setAmount0(e.target.value)}
-              className="bg-card/50 border-border/30"
+              className="bg-card/50 border-border/30 text-base"
               disabled={isIncreasing}
             />
           </div>
@@ -136,10 +137,11 @@ const IncreaseLiquidityModal = ({
             </label>
             <Input
               type="number"
+              inputMode="decimal"
               placeholder="0.0"
               value={amount1}
               onChange={(e) => setAmount1(e.target.value)}
-              className="bg-card/50 border-border/30"
+              className="bg-card/50 border-border/30 text-base"
               disabled={isIncreasing}
             />
           </div>
