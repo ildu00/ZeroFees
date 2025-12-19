@@ -27,6 +27,13 @@ const Header = () => {
             >
               Pools
             </NavLink>
+            <NavLink 
+              to="/positions" 
+              className="nav-link"
+              activeClassName="nav-link-active"
+            >
+              Positions
+            </NavLink>
           </nav>
         </div>
         
