@@ -69,6 +69,13 @@ const SwapCard = () => {
     toast.success(`${token.symbol} added`);
   };
 
+  const handleRemoveToken = (address: string) => {
+    const newCustomTokens = customTokens.filter(t => t.address.toLowerCase() !== address.toLowerCase());
+    setCustomTokens(newCustomTokens);
+    saveImportedTokens(newCustomTokens);
+    toast.success("Token removed");
+  };
+
   // Update token prices and balances when they change
   useEffect(() => {
     if (Object.keys(prices).length > 0 || Object.keys(balances).length > 0) {
@@ -321,6 +328,7 @@ const SwapCard = () => {
         selectedToken={selectingFor === "from" ? fromToken : toToken}
         tokens={allTokens}
         onImportToken={handleImportToken}
+        onRemoveToken={handleRemoveToken}
       />
 
       {/* Slippage Settings Modal */}
