@@ -31,6 +31,7 @@ export const usePositions = () => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const getProvider = useCallback(() => {
@@ -235,6 +236,108 @@ export const usePositions = () => {
     }
   }, [address, getProvider, fetchPositions]);
 
+  // Remove liquidity from a position
+  const removeLiquidity = useCallback(async (
+    tokenId: string, 
+    liquidity: string, 
+    percentToRemove: number
+  ): Promise<boolean> => {
+    const provider = getProvider();
+    if (!provider || !address) {
+      toast.error("Wallet not connected");
+      return false;
+    }
+
+    try {
+      setRemoving(tokenId);
+      toast.loading("Removing liquidity...", { id: `remove-${tokenId}` });
+
+      // Calculate liquidity to remove
+      const totalLiquidity = BigInt(liquidity);
+      const liquidityToRemove = (totalLiquidity * BigInt(percentToRemove)) / BigInt(100);
+      
+      const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
+
+      // Step 1: decreaseLiquidity
+      // decreaseLiquidity((uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min, uint256 deadline))
+      const decreaseData = encodeDecreaseLiquidityCall({
+        tokenId: BigInt(tokenId),
+        liquidity: liquidityToRemove,
+        amount0Min: BigInt(0), // Accept any amount (slippage protection disabled for simplicity)
+        amount1Min: BigInt(0),
+        deadline: BigInt(deadline),
+      });
+
+      const txHash1 = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address,
+          to: NONFUNGIBLE_POSITION_MANAGER,
+          data: decreaseData,
+        }],
+      }) as string;
+
+      // Wait for confirmation
+      let receipt1: { status: string } | null = null;
+      while (!receipt1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        receipt1 = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash1],
+        }) as { status: string } | null;
+      }
+
+      if (receipt1.status !== '0x1') {
+        toast.error("Failed to decrease liquidity", { id: `remove-${tokenId}` });
+        return false;
+      }
+
+      // Step 2: Collect the tokens
+      const maxUint128 = BigInt("0xffffffffffffffffffffffffffffffff");
+      const collectData = encodeCollectCall({
+        tokenId: BigInt(tokenId),
+        recipient: address,
+        amount0Max: maxUint128,
+        amount1Max: maxUint128,
+      });
+
+      const txHash2 = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address,
+          to: NONFUNGIBLE_POSITION_MANAGER,
+          data: collectData,
+        }],
+      }) as string;
+
+      // Wait for confirmation
+      let receipt2: { status: string } | null = null;
+      while (!receipt2) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        receipt2 = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash2],
+        }) as { status: string } | null;
+      }
+
+      if (receipt2.status === '0x1') {
+        toast.success("Liquidity removed successfully!", { id: `remove-${tokenId}` });
+        // Refresh positions
+        await fetchPositions();
+        return true;
+      } else {
+        toast.error("Failed to collect tokens", { id: `remove-${tokenId}` });
+        return false;
+      }
+    } catch (err: any) {
+      console.error("Remove liquidity error:", err);
+      toast.error(err.message || "Failed to remove liquidity", { id: `remove-${tokenId}` });
+      return false;
+    } finally {
+      setRemoving(null);
+    }
+  }, [address, getProvider, fetchPositions]);
+
   useEffect(() => {
     if (isConnected && address) {
       fetchPositions();
@@ -247,9 +350,11 @@ export const usePositions = () => {
     positions,
     loading,
     collecting,
+    removing,
     error,
     refetch: fetchPositions,
     collectFees,
+    removeLiquidity,
   };
 };
 
@@ -278,4 +383,24 @@ function encodeCollectCall(params: {
   const amount1Max = params.amount1Max.toString(16).padStart(64, '0');
   
   return selector + tokenId + recipient + amount0Max + amount1Max;
+}
+
+// Encode decreaseLiquidity function call
+function encodeDecreaseLiquidityCall(params: {
+  tokenId: bigint;
+  liquidity: bigint;
+  amount0Min: bigint;
+  amount1Min: bigint;
+  deadline: bigint;
+}): string {
+  // Function selector for decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))
+  const selector = '0x0c49ccbe';
+  
+  const tokenId = params.tokenId.toString(16).padStart(64, '0');
+  const liquidity = params.liquidity.toString(16).padStart(64, '0');
+  const amount0Min = params.amount0Min.toString(16).padStart(64, '0');
+  const amount1Min = params.amount1Min.toString(16).padStart(64, '0');
+  const deadline = params.deadline.toString(16).padStart(64, '0');
+  
+  return selector + tokenId + liquidity + amount0Min + amount1Min + deadline;
 }

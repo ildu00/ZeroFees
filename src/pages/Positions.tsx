@@ -1,10 +1,12 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2 } from "lucide-react";
+import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus } from "lucide-react";
 import { Link } from "react-router-dom";
+import RemoveLiquidityModal from "@/components/positions/RemoveLiquidityModal";
 
 const formatLiquidity = (liquidity: string): string => {
   const num = BigInt(liquidity);
@@ -20,11 +22,14 @@ const formatLiquidity = (liquidity: string): string => {
 interface PositionCardProps {
   position: Position;
   onCollect: (tokenId: string) => void;
+  onRemove: (position: Position) => void;
   isCollecting: boolean;
+  isRemoving: boolean;
 }
 
-const PositionCard = ({ position, onCollect, isCollecting }: PositionCardProps) => {
+const PositionCard = ({ position, onCollect, onRemove, isCollecting, isRemoving }: PositionCardProps) => {
   const hasFees = position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0';
+  const isLoading = isCollecting || isRemoving;
   
   return (
     <div className="glass-card p-5 hover:border-primary/30 transition-all duration-300">
@@ -100,7 +105,7 @@ const PositionCard = ({ position, onCollect, isCollecting }: PositionCardProps) 
           variant={hasFees ? "glow" : "glass"} 
           className="flex-1" 
           size="sm" 
-          disabled={!hasFees || isCollecting}
+          disabled={!hasFees || isLoading}
           onClick={() => onCollect(position.tokenId)}
         >
           {isCollecting ? (
@@ -112,6 +117,21 @@ const PositionCard = ({ position, onCollect, isCollecting }: PositionCardProps) 
             <>
               <TrendingUp className="w-4 h-4 mr-1" />
               Collect Fees
+            </>
+          )}
+        </Button>
+        <Button 
+          variant="glass" 
+          size="sm"
+          disabled={isLoading}
+          onClick={() => onRemove(position)}
+        >
+          {isRemoving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <Minus className="w-4 h-4 mr-1" />
+              Remove
             </>
           )}
         </Button>
@@ -130,10 +150,21 @@ const PositionCard = ({ position, onCollect, isCollecting }: PositionCardProps) 
 
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
-  const { positions, loading, collecting, error, refetch, collectFees } = usePositions();
+  const { positions, loading, collecting, removing, error, refetch, collectFees, removeLiquidity } = usePositions();
+  const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
   const handleCollect = async (tokenId: string) => {
     await collectFees(tokenId);
+  };
+
+  const handleOpenRemoveModal = (position: Position) => {
+    setSelectedPosition(position);
+    setRemoveModalOpen(true);
+  };
+
+  const handleRemoveLiquidity = async (tokenId: string, liquidity: string, percent: number) => {
+    return await removeLiquidity(tokenId, liquidity, percent);
   };
 
   return (
@@ -249,7 +280,9 @@ const Positions = () => {
                       key={position.tokenId} 
                       position={position} 
                       onCollect={handleCollect}
+                      onRemove={handleOpenRemoveModal}
                       isCollecting={collecting === position.tokenId}
+                      isRemoving={removing === position.tokenId}
                     />
                   ))}
                 </div>
@@ -271,6 +304,15 @@ const Positions = () => {
           </footer>
         </div>
       </main>
+
+      {/* Remove Liquidity Modal */}
+      <RemoveLiquidityModal
+        open={removeModalOpen}
+        onClose={() => setRemoveModalOpen(false)}
+        position={selectedPosition}
+        onRemove={handleRemoveLiquidity}
+        isRemoving={removing !== null}
+      />
     </div>
   );
 };
