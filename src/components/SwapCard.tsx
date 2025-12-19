@@ -9,6 +9,24 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { toast } from "sonner";
 
+// Storage key for imported tokens
+const IMPORTED_TOKENS_KEY = "regraph_imported_tokens";
+
+// Get imported tokens from localStorage
+const getImportedTokens = (): Token[] => {
+  try {
+    const stored = localStorage.getItem(IMPORTED_TOKENS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Save imported tokens to localStorage
+const saveImportedTokens = (tokens: Token[]) => {
+  localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(tokens));
+};
+
 // Convert BASE_TOKENS to Token format for the modal
 const baseTokensList: Token[] = Object.values(BASE_TOKENS).map(t => ({
   symbol: t.symbol,
@@ -34,6 +52,22 @@ const SwapCard = () => {
   const [selectingFor, setSelectingFor] = useState<"from" | "to">("from");
   const [slippage, setSlippage] = useState(0.1);
   const [deadline, setDeadline] = useState(30); // 30 minutes default
+  const [customTokens, setCustomTokens] = useState<Token[]>(() => getImportedTokens());
+
+  // All available tokens (base + imported)
+  const allTokens = [...baseTokensList, ...customTokens];
+
+  const handleImportToken = (token: Token) => {
+    // Check if token already exists
+    if (allTokens.some(t => t.address.toLowerCase() === token.address.toLowerCase())) {
+      toast.error("Token already exists");
+      return;
+    }
+    const newCustomTokens = [...customTokens, token];
+    setCustomTokens(newCustomTokens);
+    saveImportedTokens(newCustomTokens);
+    toast.success(`${token.symbol} added`);
+  };
 
   // Update token prices and balances when they change
   useEffect(() => {
@@ -90,12 +124,12 @@ const SwapCard = () => {
   };
 
   const handleSelectToken = (token: Token) => {
-    // Find the BASE_TOKENS entry
-    const baseToken = baseTokensList.find(t => t.symbol === token.symbol);
-    if (!baseToken) return;
+    // Find token in all tokens (base + custom)
+    const foundToken = allTokens.find(t => t.address.toLowerCase() === token.address.toLowerCase());
+    if (!foundToken) return;
 
     const tokenWithData = { 
-      ...baseToken, 
+      ...foundToken, 
       price: prices[token.symbol] || 0,
       balance: balances[token.symbol] || "0"
     };
@@ -285,7 +319,8 @@ const SwapCard = () => {
         onClose={() => setModalOpen(false)}
         onSelect={handleSelectToken}
         selectedToken={selectingFor === "from" ? fromToken : toToken}
-        tokens={baseTokensList}
+        tokens={allTokens}
+        onImportToken={handleImportToken}
       />
 
       {/* Slippage Settings Modal */}

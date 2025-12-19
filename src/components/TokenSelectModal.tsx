@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, Search, Star, TrendingUp } from "lucide-react";
+import { X, Search, Star, TrendingUp, Plus } from "lucide-react";
+import ImportTokenModal, { ImportedToken } from "./ImportTokenModal";
 
 export interface Token {
   symbol: string;
@@ -29,6 +30,7 @@ interface TokenSelectModalProps {
   onSelect: (token: Token) => void;
   selectedToken?: Token;
   tokens?: Token[];
+  onImportToken?: (token: Token) => void;
 }
 
 const TokenSelectModal = ({ 
@@ -36,11 +38,27 @@ const TokenSelectModal = ({
   onClose, 
   onSelect, 
   selectedToken,
-  tokens = defaultTokens 
+  tokens = defaultTokens,
+  onImportToken
 }: TokenSelectModalProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleImportToken = (imported: ImportedToken) => {
+    const newToken: Token = {
+      symbol: imported.symbol,
+      name: imported.name,
+      icon: imported.icon,
+      balance: "0",
+      address: imported.address,
+      price: 0,
+      decimals: imported.decimals,
+    };
+    onImportToken?.(newToken);
+    setImportModalOpen(false);
+  };
 
   const filteredTokens = tokens.filter(
     (token) =>
@@ -170,12 +188,26 @@ const TokenSelectModal = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border/30 text-center">
+        <div className="p-4 border-t border-border/30 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             Trading on Base via ReGraph
           </p>
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <Plus className="w-3 h-3" />
+            Import Token
+          </button>
         </div>
       </div>
+
+      {/* Import Token Modal */}
+      <ImportTokenModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImport={handleImportToken}
+      />
     </div>
   );
 };
