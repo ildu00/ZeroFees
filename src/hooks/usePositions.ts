@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { toast } from "sonner";
 
 // Uniswap V3 contracts on Base
 const NONFUNGIBLE_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
@@ -29,6 +30,7 @@ export const usePositions = () => {
   const { address, isConnected } = useWalletContext();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
+  const [collecting, setCollecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const getProvider = useCallback(() => {
@@ -173,6 +175,66 @@ export const usePositions = () => {
     }
   };
 
+  // Collect fees from a position
+  const collectFees = useCallback(async (tokenId: string): Promise<boolean> => {
+    const provider = getProvider();
+    if (!provider || !address) {
+      toast.error("Wallet not connected");
+      return false;
+    }
+
+    try {
+      setCollecting(tokenId);
+      toast.loading("Collecting fees...", { id: `collect-${tokenId}` });
+
+      // collect((uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max))
+      // Function selector: 0xfc6f7865
+      const maxUint128 = BigInt("0xffffffffffffffffffffffffffffffff");
+      
+      const collectData = encodeCollectCall({
+        tokenId: BigInt(tokenId),
+        recipient: address,
+        amount0Max: maxUint128,
+        amount1Max: maxUint128,
+      });
+
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address,
+          to: NONFUNGIBLE_POSITION_MANAGER,
+          data: collectData,
+        }],
+      }) as string;
+
+      // Wait for confirmation
+      let receipt: { status: string } | null = null;
+      while (!receipt) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        receipt = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash],
+        }) as { status: string } | null;
+      }
+
+      if (receipt.status === '0x1') {
+        toast.success("Fees collected successfully!", { id: `collect-${tokenId}` });
+        // Refresh positions to update unclaimed fees
+        await fetchPositions();
+        return true;
+      } else {
+        toast.error("Transaction failed", { id: `collect-${tokenId}` });
+        return false;
+      }
+    } catch (err: any) {
+      console.error("Collect error:", err);
+      toast.error(err.message || "Failed to collect fees", { id: `collect-${tokenId}` });
+      return false;
+    } finally {
+      setCollecting(null);
+    }
+  }, [address, getProvider, fetchPositions]);
+
   useEffect(() => {
     if (isConnected && address) {
       fetchPositions();
@@ -184,8 +246,10 @@ export const usePositions = () => {
   return {
     positions,
     loading,
+    collecting,
     error,
     refetch: fetchPositions,
+    collectFees,
   };
 };
 
@@ -196,4 +260,22 @@ function parseSignedInt(hex: string): number {
     return Number(value - BigInt(2) ** BigInt(256));
   }
   return Number(value);
+}
+
+// Encode collect function call
+function encodeCollectCall(params: {
+  tokenId: bigint;
+  recipient: string;
+  amount0Max: bigint;
+  amount1Max: bigint;
+}): string {
+  // Function selector for collect((uint256,address,uint128,uint128))
+  const selector = '0xfc6f7865';
+  
+  const tokenId = params.tokenId.toString(16).padStart(64, '0');
+  const recipient = params.recipient.slice(2).toLowerCase().padStart(64, '0');
+  const amount0Max = params.amount0Max.toString(16).padStart(64, '0');
+  const amount1Max = params.amount1Max.toString(16).padStart(64, '0');
+  
+  return selector + tokenId + recipient + amount0Max + amount1Max;
 }
