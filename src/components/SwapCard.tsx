@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import TokenInput from "./TokenInput";
 import TokenSelectModal, { Token } from "./TokenSelectModal";
 import SlippageSettingsModal from "./SlippageSettingsModal";
+import SwapConfirmationModal from "./SwapConfirmationModal";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ const SwapCard = () => {
   const [toToken, setToToken] = useState<Token>(baseTokensList[2]); // USDC
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectingFor, setSelectingFor] = useState<"from" | "to">("from");
   const [slippage, setSlippage] = useState(0.1);
   const [deadline, setDeadline] = useState(30); // 30 minutes default
@@ -111,7 +113,7 @@ const SwapCard = () => {
     }
   };
 
-  const handleSwap = async () => {
+  const openConfirmModal = () => {
     if (!fromValue || parseFloat(fromValue) === 0) {
       toast.error("Enter an amount");
       return;
@@ -122,11 +124,15 @@ const SwapCard = () => {
       return;
     }
 
+    setConfirmOpen(true);
+  };
+
+  const handleSwap = async () => {
     const fromTokenData = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS];
     const toTokenData = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS];
 
-    if (!fromTokenData || !toTokenData) {
-      toast.error("Invalid token");
+    if (!fromTokenData || !toTokenData || !quote) {
+      toast.error("Invalid swap parameters");
       return;
     }
 
@@ -139,9 +145,18 @@ const SwapCard = () => {
     );
 
     if (txHash) {
+      setConfirmOpen(false);
       setFromValue("");
       setToValue("");
     }
+  };
+
+  // Calculate minimum received with slippage
+  const getMinReceived = () => {
+    if (!toValue || parseFloat(toValue) === 0) return "0";
+    const amount = parseFloat(toValue);
+    const minAmount = amount * (1 - slippage / 100);
+    return minAmount.toFixed(6);
   };
 
   // Calculate exchange rate
@@ -235,20 +250,15 @@ const SwapCard = () => {
             variant="glow" 
             size="lg" 
             className="w-full mt-6"
-            onClick={handleSwap}
+            onClick={openConfirmModal}
             disabled={isSwapping || !fromValue || parseFloat(fromValue) === 0 || !quote}
           >
-            {isSwapping ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Swapping...
-              </>
-            ) : !fromValue || parseFloat(fromValue) === 0 ? (
+            {!fromValue || parseFloat(fromValue) === 0 ? (
               "Enter Amount"
             ) : !quote ? (
               "Fetching Quote..."
             ) : (
-              "Swap"
+              "Review Swap"
             )}
           </Button>
         ) : (
@@ -286,6 +296,22 @@ const SwapCard = () => {
         onSlippageChange={setSlippage}
         deadline={deadline}
         onDeadlineChange={setDeadline}
+      />
+
+      {/* Swap Confirmation Modal */}
+      <SwapConfirmationModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleSwap}
+        isSwapping={isSwapping}
+        fromToken={fromToken}
+        toToken={toToken}
+        fromValue={fromValue}
+        toValue={toValue}
+        slippage={slippage}
+        fee={feeUsd}
+        exchangeRate={exchangeRate}
+        minReceived={getMinReceived()}
       />
     </>
   );
