@@ -34,7 +34,7 @@ const Pools = () => {
               <a href="#" className="hover:text-foreground transition-colors">Discord</a>
             </div>
             <p className="mt-6 text-xs text-muted-foreground/50">
-              © 2024 Zero Fees — Decentralized Exchange Protocol
+              © 2024 SWAP.fi — Decentralized Exchange Protocol
             </p>
           </footer>
         </div>

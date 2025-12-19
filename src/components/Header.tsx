@@ -1,16 +1,14 @@
 import { NavLink } from "./NavLink";
 import WalletButton from "./WalletButton";
-import logoImage from "@/assets/zero-fees-logo.png";
 
 const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <NavLink to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <img src={logoImage} alt="Zero Fees" className="w-8 h-8" />
-            <span className="text-gradient">Zero</span>
-            <span className="text-foreground">FEES</span>
+          <NavLink to="/" className="text-xl font-bold tracking-tight">
+            <span className="text-gradient">SWAP</span>
+            <span className="text-muted-foreground">.fi</span>
           </NavLink>
           
           <nav className="hidden md:flex items-center gap-6">
