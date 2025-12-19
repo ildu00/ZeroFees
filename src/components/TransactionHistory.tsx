@@ -65,12 +65,20 @@ const TransactionHistory = () => {
 
       if (fnError) throw fnError;
 
+      if (data?.warning?.message) {
+        setTransactions([]);
+        setError(data.warning.message);
+        return;
+      }
+
       if (data?.transactions) {
         const txs = data.transactions.map((tx: any) => ({
           ...tx,
           timestamp: new Date(tx.timestamp),
         }));
         setTransactions(txs);
+      } else {
+        setTransactions([]);
       }
     } catch (err) {
       console.error('Failed to fetch transactions:', err);

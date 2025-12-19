@@ -6,9 +6,11 @@ const corsHeaders = {
 };
 
 // Multiple Base RPC endpoints for failover
+// Note: different providers have different limits on `eth_getLogs`, so we also chunk requests below.
 const BASE_RPCS = [
-  "https://base.llamarpc.com",
-  "https://base.drpc.org",
+  "https://rpc.ankr.com/base",
+  "https://1rpc.io/base",
+  "https://base.meowrpc.com",
   "https://base-rpc.publicnode.com",
   "https://mainnet.base.org",
 ];
@@ -120,53 +122,71 @@ function shortenAddress(address: string): string {
 
 async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
   console.log(`Fetching swaps for wallet: ${walletAddress}`);
-  
+
   const latestBlock = await getLatestBlock();
-  // Look back ~1 day only (assuming ~2 sec blocks = ~43200 blocks)
-  const fromBlock = Math.max(0, latestBlock - 43200);
-  
+
+  // Provider limits differ; keep lookback small and scan in chunks.
+  const LOOKBACK_BLOCKS = 20000; // ~9-12 hours on Base
+  const CHUNK_SIZE = 5000;
+
+  const startBlock = Math.max(0, latestBlock - LOOKBACK_BLOCKS);
   const paddedAddress = padAddress(walletAddress);
-  
-  console.log(`Searching blocks ${fromBlock} to ${latestBlock}`);
-  
-  // Get Transfer events where wallet is sender or receiver
-  const [logsFrom, logsTo] = await Promise.all([
-    rpcCallWithFallback('eth_getLogs', [{
-      fromBlock: "0x" + fromBlock.toString(16),
-      toBlock: "latest",
-      topics: [TRANSFER_TOPIC, paddedAddress, null],
-    }]),
-    rpcCallWithFallback('eth_getLogs', [{
-      fromBlock: "0x" + fromBlock.toString(16),
-      toBlock: "latest",
-      topics: [TRANSFER_TOPIC, null, paddedAddress],
-    }]),
-  ]);
 
-  console.log(`Found ${logsFrom?.length || 0} outgoing, ${logsTo?.length || 0} incoming transfers`);
+  console.log(`Scanning blocks ${startBlock} to ${latestBlock} in chunks of ${CHUNK_SIZE}`);
 
-  if (!logsFrom || !logsTo) {
-    return [];
-  }
+  const txMap = new Map<string, { from: any[]; to: any[]; blockNumber: string }>();
 
-  // Group logs by transaction hash
-  const txMap = new Map<string, { from: any[], to: any[], blockNumber: string }>();
-  
-  for (const log of logsFrom) {
-    if (!txMap.has(log.transactionHash)) {
-      txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
+  // Iterate backwards so we find the newest swaps first.
+  for (let chunkTo = latestBlock; chunkTo >= startBlock; chunkTo -= CHUNK_SIZE) {
+    const chunkFrom = Math.max(startBlock, chunkTo - CHUNK_SIZE + 1);
+
+    const fromBlockHex = "0x" + chunkFrom.toString(16);
+    const toBlockHex = "0x" + chunkTo.toString(16);
+
+    console.log(`Fetching logs for range ${chunkFrom}-${chunkTo}`);
+
+    let logsFrom: any[] = [];
+    let logsTo: any[] = [];
+
+    try {
+      [logsFrom, logsTo] = await Promise.all([
+        rpcCallWithFallback('eth_getLogs', [{
+          fromBlock: fromBlockHex,
+          toBlock: toBlockHex,
+          topics: [TRANSFER_TOPIC, paddedAddress, null],
+        }]),
+        rpcCallWithFallback('eth_getLogs', [{
+          fromBlock: fromBlockHex,
+          toBlock: toBlockHex,
+          topics: [TRANSFER_TOPIC, null, paddedAddress],
+        }]),
+      ]);
+    } catch (err) {
+      console.error(`Chunk ${chunkFrom}-${chunkTo} failed:`, err);
+      // Try next chunk/provider; do not fail the whole request.
+      continue;
     }
-    txMap.get(log.transactionHash)!.from.push(log);
-  }
-  
-  for (const log of logsTo) {
-    if (!txMap.has(log.transactionHash)) {
-      txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
+
+    for (const log of logsFrom || []) {
+      if (!txMap.has(log.transactionHash)) {
+        txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
+      }
+      txMap.get(log.transactionHash)!.from.push(log);
     }
-    txMap.get(log.transactionHash)!.to.push(log);
+
+    for (const log of logsTo || []) {
+      if (!txMap.has(log.transactionHash)) {
+        txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
+      }
+      txMap.get(log.transactionHash)!.to.push(log);
+    }
+
+    // If we already have a decent pool of candidate txs, stop early.
+    if (txMap.size >= 80) break;
   }
 
-  // Filter for potential swaps (has both in and out transfers)
+  console.log(`Collected transfers from ${txMap.size} transactions`);
+
   const potentialSwaps = Array.from(txMap.entries())
     .filter(([_, data]) => data.from.length > 0 && data.to.length > 0)
     .sort((a, b) => parseInt(b[1].blockNumber, 16) - parseInt(a[1].blockNumber, 16))
@@ -205,7 +225,6 @@ async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
         timestamp: new Date(timestamp * 1000),
         blockNumber: parseInt(data.blockNumber, 16),
       });
-      
     } catch (err) {
       console.error(`Error processing tx ${txHash}:`, err);
     }
@@ -242,9 +261,11 @@ serve(async (req) => {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error fetching transactions:", message);
+
+    // Important: return 200 so the client can render a friendly message instead of crashing.
     return new Response(
-      JSON.stringify({ error: "Failed to fetch transactions", details: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ transactions: [], warning: { message } }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
