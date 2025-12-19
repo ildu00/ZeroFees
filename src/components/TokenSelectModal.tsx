@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Search, Star, TrendingUp, Plus } from "lucide-react";
+import { X, Search, Star, TrendingUp, Plus, Trash2 } from "lucide-react";
 import ImportTokenModal, { ImportedToken } from "./ImportTokenModal";
 
 export interface Token {
@@ -31,7 +31,10 @@ interface TokenSelectModalProps {
   selectedToken?: Token;
   tokens?: Token[];
   onImportToken?: (token: Token) => void;
+  onRemoveToken?: (address: string) => void;
 }
+
+const defaultAddresses = defaultTokens.map((t) => t.address.toLowerCase());
 
 const TokenSelectModal = ({ 
   isOpen, 
@@ -39,12 +42,15 @@ const TokenSelectModal = ({
   onSelect, 
   selectedToken,
   tokens = defaultTokens,
-  onImportToken
+  onImportToken,
+  onRemoveToken
 }: TokenSelectModalProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   if (!isOpen) return null;
+
+  const isCustomToken = (token: Token) => !defaultAddresses.includes(token.address.toLowerCase());
 
   const handleImportToken = (imported: ImportedToken) => {
     const newToken: Token = {
@@ -153,36 +159,59 @@ const TokenSelectModal = ({
             </div>
           ) : (
             filteredTokens.map((token) => (
-              <button
-                key={token.symbol}
-                onClick={() => handleSelect(token)}
+              <div
+                key={token.address}
                 className={`w-full flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors ${
                   selectedToken?.symbol === token.symbol ? "bg-secondary/30" : ""
                 }`}
               >
-                {/* Token Icon */}
-                <div className="w-10 h-10 rounded-full bg-secondary/80 border border-border/30 flex items-center justify-center text-xl">
-                  {token.icon}
-                </div>
-
-                {/* Token Info */}
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{token.symbol}</span>
-                    {popularTokens.includes(token.symbol) && (
-                      <Star className="w-3 h-3 text-primary fill-primary" />
-                    )}
+                <button
+                  onClick={() => handleSelect(token)}
+                  className="flex items-center gap-3 flex-1"
+                >
+                  {/* Token Icon */}
+                  <div className="w-10 h-10 rounded-full bg-secondary/80 border border-border/30 flex items-center justify-center text-xl">
+                    {token.icon}
                   </div>
-                  <span className="text-sm text-muted-foreground">{token.name}</span>
-                </div>
 
-                {/* Price */}
-                <div className="text-right">
-                  <div className="text-sm text-muted-foreground">
-                    {token.price ? `$${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                  {/* Token Info */}
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{token.symbol}</span>
+                      {popularTokens.includes(token.symbol) && (
+                        <Star className="w-3 h-3 text-primary fill-primary" />
+                      )}
+                      {isCustomToken(token) && (
+                        <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[10px] font-medium">
+                          Imported
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">{token.name}</span>
                   </div>
-                </div>
-              </button>
+
+                  {/* Price */}
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">
+                      {token.price ? `$${token.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Remove button for custom tokens */}
+                {isCustomToken(token) && onRemoveToken && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveToken(token.address);
+                    }}
+                    className="p-2 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remove token"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             ))
           )}
         </div>
