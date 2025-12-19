@@ -87,11 +87,21 @@ if (typeof window !== 'undefined') {
       try {
         const all = root.querySelectorAll('*');
         all.forEach((el) => {
-          const text = (el.textContent || '').trim().toLowerCase();
-          if (!text) return;
+          // Only check direct text (not inherited from children) to avoid hiding parent containers
+          const directText = Array.from(el.childNodes)
+            .filter((n) => n.nodeType === Node.TEXT_NODE)
+            .map((n) => n.textContent || '')
+            .join('')
+            .trim()
+            .toLowerCase();
 
+          if (!directText) return;
+
+          // Very short brand line: "ux by reown" or similar
           const isBrandLine =
-            (text.includes('ux by') || text.includes('powered by')) && text.includes('reown');
+            directText.length < 30 &&
+            ((directText.includes('ux by') || directText.includes('powered by')) &&
+              directText.includes('reown'));
 
           if (isBrandLine) hideEl(el);
         });
