@@ -42,8 +42,9 @@ const SwapCard = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (fromValue && parseFloat(fromValue) > 0) {
-        const decimals = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
-        fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimals);
+        const decimalsIn = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+        const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+        fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
       }
     }, 500);
 

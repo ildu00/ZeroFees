@@ -38,6 +38,7 @@ export interface SwapQuote {
   fee: number;
   route: string;
   priceImpact?: number;
+  decimalsOut?: number;
 }
 
 export interface TokenPrices {
@@ -74,7 +75,8 @@ export const useSwap = () => {
     tokenIn: string,
     tokenOut: string,
     amountIn: string,
-    decimalsIn: number
+    decimalsIn: number,
+    decimalsOut: number
   ) => {
     if (!amountIn || parseFloat(amountIn) === 0) {
       setQuote(null);
@@ -83,8 +85,8 @@ export const useSwap = () => {
 
     setIsLoadingQuote(true);
     try {
-      // Convert to wei
-      const amountInWei = (parseFloat(amountIn) * Math.pow(10, decimalsIn)).toFixed(0);
+      // Convert to wei based on input token decimals
+      const amountInWei = BigInt(Math.floor(parseFloat(amountIn) * Math.pow(10, decimalsIn))).toString();
       
       const { data, error } = await supabase.functions.invoke('get-swap-quote', {
         body: { action: 'quote', tokenIn, tokenOut, amountIn: amountInWei },
@@ -92,7 +94,8 @@ export const useSwap = () => {
       
       if (error) throw error;
       
-      setQuote(data);
+      // Store decimalsOut in quote for later use
+      setQuote({ ...data, decimalsOut });
       return data;
     } catch (error) {
       console.error('Error fetching quote:', error);
