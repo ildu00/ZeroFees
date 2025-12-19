@@ -3,8 +3,10 @@ import { ArrowDownUp, Settings, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TokenInput from "./TokenInput";
 import TokenSelectModal, { Token, allTokens } from "./TokenSelectModal";
+import { useWalletContext } from "@/contexts/WalletContext";
 
 const SwapCard = () => {
+  const { isConnected, connect, isConnecting } = useWalletContext();
   const [fromValue, setFromValue] = useState("");
   const [toValue, setToValue] = useState("");
   const [fromToken, setFromToken] = useState<Token>(allTokens[0]); // ETH
@@ -99,9 +101,21 @@ const SwapCard = () => {
         </div>
 
         {/* Swap Button */}
-        <Button variant="glow" size="lg" className="w-full mt-6">
-          Connect Wallet to Swap
-        </Button>
+        {isConnected ? (
+          <Button variant="glow" size="lg" className="w-full mt-6">
+            Swap
+          </Button>
+        ) : (
+          <Button 
+            variant="glow" 
+            size="lg" 
+            className="w-full mt-6"
+            onClick={connect}
+            disabled={isConnecting}
+          >
+            {isConnecting ? 'Connecting...' : 'Connect Wallet to Swap'}
+          </Button>
+        )}
 
         {/* Additional Info */}
         <p className="text-center text-xs text-muted-foreground mt-4">
