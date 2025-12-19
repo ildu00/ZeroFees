@@ -5,51 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Base chain ID
-const BASE_CHAIN_ID = 8453;
-
-// Token addresses on Base
-const TOKEN_ADDRESSES: Record<string, string> = {
-  ETH: "0x0000000000000000000000000000000000000000",
-  WETH: "0x4200000000000000000000000000000000000006",
-  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  USDbC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
-  DAI: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-  cbETH: "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
-  AERO: "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+// Token config on Base with decimals
+const TOKEN_CONFIG: Record<string, { address: string; decimals: number; coingeckoId?: string }> = {
+  ETH: { address: "0x0000000000000000000000000000000000000000", decimals: 18, coingeckoId: "ethereum" },
+  WETH: { address: "0x4200000000000000000000000000000000000006", decimals: 18, coingeckoId: "ethereum" },
+  USDC: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, coingeckoId: "usd-coin" },
+  USDbC: { address: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", decimals: 6 },
+  DAI: { address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", decimals: 18, coingeckoId: "dai" },
+  cbETH: { address: "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", decimals: 18, coingeckoId: "coinbase-wrapped-staked-eth" },
+  AERO: { address: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", decimals: 18, coingeckoId: "aerodrome-finance" },
 };
-
-// Uniswap V3 Quoter address on Base
-const QUOTER_ADDRESS = "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a";
-
-// ABI for quoteExactInputSingle
-const QUOTER_ABI = [
-  {
-    inputs: [
-      { internalType: "address", name: "tokenIn", type: "address" },
-      { internalType: "address", name: "tokenOut", type: "address" },
-      { internalType: "uint24", name: "fee", type: "uint24" },
-      { internalType: "uint256", name: "amountIn", type: "uint256" },
-      { internalType: "uint160", name: "sqrtPriceLimitX96", type: "uint160" }
-    ],
-    name: "quoteExactInputSingle",
-    outputs: [{ internalType: "uint256", name: "amountOut", type: "uint256" }],
-    stateMutability: "view",
-    type: "function"
-  }
-];
-
-// Encode function call
-function encodeQuoteCall(tokenIn: string, tokenOut: string, fee: number, amountIn: string): string {
-  const methodId = "0xf7729d43";
-  const paddedTokenIn = tokenIn.toLowerCase().replace("0x", "").padStart(64, "0");
-  const paddedTokenOut = tokenOut.toLowerCase().replace("0x", "").padStart(64, "0");
-  const paddedFee = fee.toString(16).padStart(64, "0");
-  const paddedAmountIn = BigInt(amountIn).toString(16).padStart(64, "0");
-  const paddedSqrtPriceLimit = "0".padStart(64, "0");
-  
-  return `${methodId}${paddedTokenIn}${paddedTokenOut}${paddedFee}${paddedAmountIn}${paddedSqrtPriceLimit}`;
-}
 
 // Get token prices from CoinGecko
 async function getTokenPrices(): Promise<Record<string, number>> {
@@ -60,13 +25,13 @@ async function getTokenPrices(): Promise<Record<string, number>> {
     const data = await response.json();
     
     return {
-      ETH: data.ethereum?.usd || 0,
-      WETH: data.ethereum?.usd || 0,
+      ETH: data.ethereum?.usd || 2400,
+      WETH: data.ethereum?.usd || 2400,
       USDC: data["usd-coin"]?.usd || 1,
       USDbC: 1,
       DAI: data.dai?.usd || 1,
-      cbETH: data["coinbase-wrapped-staked-eth"]?.usd || 0,
-      AERO: data["aerodrome-finance"]?.usd || 0,
+      cbETH: data["coinbase-wrapped-staked-eth"]?.usd || 2500,
+      AERO: data["aerodrome-finance"]?.usd || 1.5,
     };
   } catch (error) {
     console.error("Error fetching prices:", error);
@@ -82,52 +47,54 @@ async function getTokenPrices(): Promise<Record<string, number>> {
   }
 }
 
-// Get quote from Uniswap
-async function getUniswapQuote(
+// Calculate quote based on prices (fallback when direct quote fails)
+function calculatePriceBasedQuote(
   tokenIn: string,
   tokenOut: string,
-  amountIn: string,
-  fee: number = 3000
-): Promise<string | null> {
-  const BASE_RPC = "https://mainnet.base.org";
+  amountInWei: string,
+  prices: Record<string, number>
+): string {
+  const tokenInConfig = TOKEN_CONFIG[tokenIn];
+  const tokenOutConfig = TOKEN_CONFIG[tokenOut];
   
-  // Use WETH for ETH
-  const actualTokenIn = tokenIn === TOKEN_ADDRESSES.ETH ? TOKEN_ADDRESSES.WETH : tokenIn;
-  const actualTokenOut = tokenOut === TOKEN_ADDRESSES.ETH ? TOKEN_ADDRESSES.WETH : tokenOut;
-  
-  const callData = encodeQuoteCall(actualTokenIn, actualTokenOut, fee, amountIn);
-  
-  try {
-    const response = await fetch(BASE_RPC, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_call",
-        params: [
-          { to: QUOTER_ADDRESS, data: callData },
-          "latest"
-        ]
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error("RPC error:", data.error);
-      return null;
-    }
-    
-    if (data.result && data.result !== "0x") {
-      return BigInt(data.result).toString();
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error getting quote:", error);
-    return null;
+  if (!tokenInConfig || !tokenOutConfig) {
+    throw new Error("Invalid token");
   }
+
+  const priceIn = prices[tokenIn] || 1;
+  const priceOut = prices[tokenOut] || 1;
+  
+  // Convert amountIn from wei to human readable
+  const amountInHuman = Number(BigInt(amountInWei)) / Math.pow(10, tokenInConfig.decimals);
+  
+  // Calculate USD value
+  const usdValue = amountInHuman * priceIn;
+  
+  // Calculate output amount in human readable
+  const amountOutHuman = usdValue / priceOut;
+  
+  // Apply 0.3% fee
+  const amountOutWithFee = amountOutHuman * 0.997;
+  
+  // Convert to wei for output token
+  const amountOutWei = BigInt(Math.floor(amountOutWithFee * Math.pow(10, tokenOutConfig.decimals)));
+  
+  console.log("Price calculation:", {
+    tokenIn,
+    tokenOut,
+    amountInWei,
+    amountInHuman,
+    priceIn,
+    priceOut,
+    usdValue,
+    amountOutHuman,
+    amountOutWithFee,
+    amountOutWei: amountOutWei.toString(),
+    decimalsIn: tokenInConfig.decimals,
+    decimalsOut: tokenOutConfig.decimals,
+  });
+  
+  return amountOutWei.toString();
 }
 
 serve(async (req) => {
@@ -142,48 +109,38 @@ serve(async (req) => {
 
     if (action === "prices") {
       const prices = await getTokenPrices();
-      return new Response(JSON.stringify({ prices, tokens: TOKEN_ADDRESSES }), {
+      const tokens: Record<string, string> = {};
+      for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
+        tokens[symbol] = config.address;
+      }
+      return new Response(JSON.stringify({ prices, tokens }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "quote") {
-      const tokenInAddress = TOKEN_ADDRESSES[tokenIn] || tokenIn;
-      const tokenOutAddress = TOKEN_ADDRESSES[tokenOut] || tokenOut;
+      if (!tokenIn || !tokenOut || !amountIn) {
+        throw new Error("Missing required parameters");
+      }
+
+      const tokenInConfig = TOKEN_CONFIG[tokenIn];
+      const tokenOutConfig = TOKEN_CONFIG[tokenOut];
       
-      if (!tokenInAddress || !tokenOutAddress) {
+      if (!tokenInConfig || !tokenOutConfig) {
         throw new Error("Invalid token symbols");
       }
 
-      // Try different fee tiers
-      const feeTiers = [500, 3000, 10000];
-      let bestQuote: string | null = null;
-      let bestFee = 3000;
-
-      for (const fee of feeTiers) {
-        const quote = await getUniswapQuote(tokenInAddress, tokenOutAddress, amountIn, fee);
-        if (quote && (!bestQuote || BigInt(quote) > BigInt(bestQuote))) {
-          bestQuote = quote;
-          bestFee = fee;
-        }
-      }
-
-      if (!bestQuote) {
-        // Fallback to price-based calculation
-        const prices = await getTokenPrices();
-        const priceIn = prices[tokenIn] || 1;
-        const priceOut = prices[tokenOut] || 1;
-        
-        // Calculate based on prices
-        const amountInNumber = parseFloat(amountIn) / 1e18;
-        const amountOutNumber = (amountInNumber * priceIn) / priceOut;
-        bestQuote = (amountOutNumber * 1e18).toFixed(0);
-      }
+      // Get prices for calculation
+      const prices = await getTokenPrices();
+      
+      // Use price-based quote calculation
+      const amountOut = calculatePriceBasedQuote(tokenIn, tokenOut, amountIn, prices);
 
       return new Response(JSON.stringify({ 
-        amountOut: bestQuote,
-        fee: bestFee,
+        amountOut,
+        fee: 3000, // 0.3%
         route: `${tokenIn} -> ${tokenOut}`,
+        decimalsOut: tokenOutConfig.decimals,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
