@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
+import Footer from "@/components/Footer";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
@@ -317,18 +318,7 @@ const Positions = () => {
             </>
           )}
 
-          {/* Footer */}
-          <footer className="mt-24 text-center">
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Docs</a>
-              <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-              <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-              <a href="#" className="hover:text-foreground transition-colors">Discord</a>
-            </div>
-            <p className="mt-6 text-xs text-muted-foreground/50">
-              © 2024 SWAP.fi — Decentralized Exchange Protocol
-            </p>
-          </footer>
+          <Footer />
         </div>
       </main>
 

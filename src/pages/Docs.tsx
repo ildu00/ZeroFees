@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap, Shield, Wallet, ArrowLeftRight, Droplets, BarChart3 } from "lucide-react";
 
@@ -196,12 +197,7 @@ const Docs = () => {
             </div>
           </section>
 
-          {/* Footer */}
-          <footer className="mt-24 text-center">
-            <p className="text-xs text-muted-foreground/50">
-              © 2025 zerofees.online — Decentralized Exchange Protocol
-            </p>
-          </footer>
+          <Footer />
         </div>
       </main>
     </div>

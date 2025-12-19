@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import PoolsList from "@/components/pools/PoolsList";
-
+import Footer from "@/components/Footer";
 const Pools = () => {
   return (
     <div className="min-h-screen relative">
@@ -25,18 +25,7 @@ const Pools = () => {
           {/* Pools List */}
           <PoolsList />
 
-          {/* Footer */}
-          <footer className="mt-24 text-center">
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Docs</a>
-              <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-              <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-              <a href="#" className="hover:text-foreground transition-colors">Discord</a>
-            </div>
-            <p className="mt-6 text-xs text-muted-foreground/50">
-              © 2024 SWAP.fi — Decentralized Exchange Protocol
-            </p>
-          </footer>
+          <Footer />
         </div>
       </main>
     </div>
