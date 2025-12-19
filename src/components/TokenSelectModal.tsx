@@ -115,7 +115,7 @@ const TokenSelectModal = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or symbol"
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+              className="flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground/50 outline-none"
               autoFocus
             />
           </div>

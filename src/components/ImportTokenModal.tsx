@@ -182,7 +182,7 @@ const ImportTokenModal = ({ isOpen, onClose, onImport }: ImportTokenModalProps) 
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="0x..."
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
+                  className="flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground/50 outline-none"
                 />
               </div>
               <Button
