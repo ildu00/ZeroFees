@@ -1,12 +1,12 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useWallet } from '@/hooks/useWallet';
+import { useAppKitWallet } from '@/hooks/useAppKitWallet';
 
-type WalletContextType = ReturnType<typeof useWallet>;
+type WalletContextType = ReturnType<typeof useAppKitWallet>;
 
 const WalletContext = createContext<WalletContextType | null>(null);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const wallet = useWallet();
+  const wallet = useAppKitWallet();
   return (
     <WalletContext.Provider value={wallet}>
       {children}

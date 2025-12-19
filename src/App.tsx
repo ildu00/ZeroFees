@@ -10,6 +10,9 @@ import Positions from "./pages/Positions";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
+// Initialize AppKit
+import './config/appkit';
+
 const queryClient = new QueryClient();
 
 const App = () => (
