@@ -104,10 +104,11 @@ const SlippageSettingsModal = ({
               <div className="flex-1 min-w-[80px] relative">
                 <input
                   type="text"
+                  inputMode="decimal"
                   value={customSlippage}
                   onChange={(e) => handleCustomSlippageChange(e.target.value)}
                   placeholder="Custom"
-                  className={`w-full py-2 px-3 pr-7 rounded-xl text-sm font-medium bg-secondary/60 text-foreground placeholder:text-muted-foreground/50 outline-none border transition-all ${
+                  className={`w-full py-2 px-3 pr-7 rounded-xl text-base font-medium bg-secondary/60 text-foreground placeholder:text-muted-foreground/50 outline-none border transition-all ${
                     customSlippage
                       ? "border-primary"
                       : "border-transparent hover:bg-secondary"
@@ -152,9 +153,10 @@ const SlippageSettingsModal = ({
               <div className="flex-1 relative">
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={customDeadline}
                   onChange={(e) => handleDeadlineChange(e.target.value)}
-                  className="w-full py-2 px-3 rounded-xl text-sm font-medium bg-secondary/60 text-foreground outline-none border border-transparent focus:border-primary transition-all"
+                  className="w-full py-2 px-3 rounded-xl text-base font-medium bg-secondary/60 text-foreground outline-none border border-transparent focus:border-primary transition-all"
                 />
               </div>
               <span className="text-sm text-muted-foreground">minutes</span>
