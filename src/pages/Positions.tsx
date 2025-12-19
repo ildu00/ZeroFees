@@ -211,7 +211,7 @@ const Positions = () => {
               <span className="text-gradient">Positions</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              View and manage your Uniswap V3 liquidity positions on Base
+              View and manage your liquidity positions on Base
             </p>
           </div>
 
@@ -289,7 +289,7 @@ const Positions = () => {
                   <Droplets className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
                   <h3 className="text-xl font-medium mb-3">No Positions Found</h3>
                   <p className="text-muted-foreground mb-6">
-                    You don't have any liquidity positions on Uniswap V3 yet
+                    You don't have any liquidity positions yet
                   </p>
                   <Button variant="glow" size="lg" onClick={() => setAddLiquidityModalOpen(true)}>
                     Add Liquidity
