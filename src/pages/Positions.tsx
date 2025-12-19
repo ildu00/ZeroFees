@@ -5,9 +5,9 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
 import RemoveLiquidityModal from "@/components/positions/RemoveLiquidityModal";
 import IncreaseLiquidityModal from "@/components/positions/IncreaseLiquidityModal";
+import AddLiquidityModal from "@/components/pools/AddLiquidityModal";
 
 const formatLiquidity = (liquidity: string): string => {
   const num = BigInt(liquidity);
@@ -171,6 +171,7 @@ const Positions = () => {
   const { positions, loading, collecting, removing, increasing, error, refetch, collectFees, removeLiquidity, increaseLiquidity } = usePositions();
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
+  const [addLiquidityModalOpen, setAddLiquidityModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
   const handleCollect = async (tokenId: string) => {
@@ -243,12 +244,10 @@ const Positions = () => {
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
-                <Link to="/pools">
-                  <Button variant="glow" size="sm">
-                    <Droplets className="w-4 h-4 mr-1" />
-                    New Position
-                  </Button>
-                </Link>
+                <Button variant="glow" size="sm" onClick={() => setAddLiquidityModalOpen(true)}>
+                  <Droplets className="w-4 h-4 mr-1" />
+                  New Position
+                </Button>
               </div>
 
               {/* Error State */}
@@ -292,11 +291,9 @@ const Positions = () => {
                   <p className="text-muted-foreground mb-6">
                     You don't have any liquidity positions on Uniswap V3 yet
                   </p>
-                  <Link to="/pools">
-                    <Button variant="glow" size="lg">
-                      Add Liquidity
-                    </Button>
-                  </Link>
+                  <Button variant="glow" size="lg" onClick={() => setAddLiquidityModalOpen(true)}>
+                    Add Liquidity
+                  </Button>
                 </div>
               )}
 
@@ -351,6 +348,13 @@ const Positions = () => {
         position={selectedPosition}
         onIncrease={handleIncreaseLiquidity}
         isIncreasing={increasing !== null}
+      />
+
+      {/* Add Liquidity Modal */}
+      <AddLiquidityModal
+        open={addLiquidityModalOpen}
+        onClose={() => setAddLiquidityModalOpen(false)}
+        pool={null}
       />
     </div>
   );
