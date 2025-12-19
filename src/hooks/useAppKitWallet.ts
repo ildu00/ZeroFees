@@ -2,6 +2,17 @@ import { useAppKitAccount, useAppKitProvider, useDisconnect } from '@reown/appki
 import { BrowserProvider, formatEther } from 'ethers';
 import { useState, useEffect, useCallback } from 'react';
 import type { Eip1193Provider } from 'ethers';
+import { toast } from 'sonner';
+
+// Base chain config
+const BASE_CHAIN_ID = '0x2105'; // 8453 in hex
+const BASE_CHAIN_CONFIG = {
+  chainId: BASE_CHAIN_ID,
+  chainName: 'Base',
+  nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+  rpcUrls: ['https://mainnet.base.org'],
+  blockExplorerUrls: ['https://basescan.org'],
+};
 
 interface WalletState {
   isConnected: boolean;
@@ -9,6 +20,8 @@ interface WalletState {
   balance: string | null;
   isConnecting: boolean;
   error: string | null;
+  chainId: string | null;
+  isOnBase: boolean;
 }
 
 export const useAppKitWallet = () => {
@@ -22,11 +35,65 @@ export const useAppKitWallet = () => {
     balance: null,
     isConnecting: false,
     error: null,
+    chainId: null,
+    isOnBase: false,
   });
 
   const formatAddress = (addr: string): string => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+
+  // Switch to Base network
+  const switchToBase = useCallback(async () => {
+    if (!walletProvider) return false;
+    
+    try {
+      await (walletProvider as any).request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: BASE_CHAIN_ID }],
+      });
+      setState(prev => ({ ...prev, chainId: BASE_CHAIN_ID, isOnBase: true }));
+      return true;
+    } catch (switchError: any) {
+      // Chain not added, try to add it
+      if (switchError.code === 4902) {
+        try {
+          await (walletProvider as any).request({
+            method: 'wallet_addEthereumChain',
+            params: [BASE_CHAIN_CONFIG],
+          });
+          setState(prev => ({ ...prev, chainId: BASE_CHAIN_ID, isOnBase: true }));
+          return true;
+        } catch (addError) {
+          console.error('Error adding Base chain:', addError);
+          toast.error('Failed to add Base network');
+          return false;
+        }
+      }
+      console.error('Error switching to Base:', switchError);
+      return false;
+    }
+  }, [walletProvider]);
+
+  // Check current chain and auto-switch to Base
+  const checkAndSwitchToBase = useCallback(async () => {
+    if (!walletProvider) return;
+    
+    try {
+      const chainId = await (walletProvider as any).request({ method: 'eth_chainId' }) as string;
+      setState(prev => ({ ...prev, chainId, isOnBase: chainId === BASE_CHAIN_ID }));
+      
+      if (chainId !== BASE_CHAIN_ID) {
+        toast.info('Switching to Base network...', { id: 'switch-chain' });
+        const switched = await switchToBase();
+        if (switched) {
+          toast.success('Connected to Base network', { id: 'switch-chain' });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking chain:', error);
+    }
+  }, [walletProvider, switchToBase]);
 
   // Fetch balance when connected
   const fetchBalance = useCallback(async () => {
@@ -51,15 +118,43 @@ export const useAppKitWallet = () => {
       isConnecting: status === 'connecting',
     }));
 
-    if (isConnected && address) {
+    if (isConnected && address && walletProvider) {
+      // Auto-switch to Base and fetch balance
+      checkAndSwitchToBase();
       fetchBalance();
     }
-  }, [isConnected, address, status, fetchBalance]);
+  }, [isConnected, address, status, walletProvider, fetchBalance, checkAndSwitchToBase]);
+
+  // Listen for chain changes
+  useEffect(() => {
+    if (!walletProvider) return;
+
+    const handleChainChanged = (chainId: string) => {
+      const isOnBase = chainId === BASE_CHAIN_ID;
+      setState(prev => ({ ...prev, chainId, isOnBase }));
+      
+      if (!isOnBase) {
+        toast.warning('Please switch to Base network for best experience', {
+          action: {
+            label: 'Switch',
+            onClick: () => switchToBase(),
+          },
+        });
+      } else {
+        fetchBalance();
+      }
+    };
+
+    (walletProvider as any).on?.('chainChanged', handleChainChanged);
+
+    return () => {
+      (walletProvider as any).removeListener?.('chainChanged', handleChainChanged);
+    };
+  }, [walletProvider, switchToBase, fetchBalance]);
 
   const connect = useCallback(async () => {
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
     try {
-      // Import appkit dynamically to avoid circular dependencies
       const { appkit } = await import('@/config/appkit');
       appkit.open();
     } catch (error) {
@@ -80,6 +175,8 @@ export const useAppKitWallet = () => {
         balance: null,
         isConnecting: false,
         error: null,
+        chainId: null,
+        isOnBase: false,
       });
     } catch (error) {
       console.error('Failed to disconnect:', error);
@@ -91,6 +188,7 @@ export const useAppKitWallet = () => {
     formattedAddress: state.address ? formatAddress(state.address) : null,
     connect,
     disconnect,
+    switchToBase,
     walletProvider,
   };
 };
