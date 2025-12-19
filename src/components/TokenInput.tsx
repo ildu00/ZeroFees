@@ -1,18 +1,16 @@
 import { ChevronDown } from "lucide-react";
+import type { Token } from "./TokenSelectModal";
 
 interface TokenInputProps {
   label: string;
-  token: {
-    symbol: string;
-    icon: string;
-    balance: string;
-  };
+  token: Token;
   value: string;
   onChange?: (value: string) => void;
+  onTokenClick?: () => void;
   readOnly?: boolean;
 }
 
-const TokenInput = ({ label, token, value, onChange, readOnly = false }: TokenInputProps) => {
+const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = false }: TokenInputProps) => {
   return (
     <div className="glass-input p-4">
       <div className="flex items-center justify-between mb-2">
@@ -32,7 +30,10 @@ const TokenInput = ({ label, token, value, onChange, readOnly = false }: TokenIn
           className="flex-1 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none"
         />
         
-        <button className="token-selector">
+        <button 
+          onClick={onTokenClick}
+          className="token-selector"
+        >
           <span className="text-xl">{token.icon}</span>
           <span className="font-medium">{token.symbol}</span>
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -40,7 +41,7 @@ const TokenInput = ({ label, token, value, onChange, readOnly = false }: TokenIn
       </div>
       
       <div className="mt-2 text-right text-sm text-muted-foreground">
-        ≈ $0.00
+        ≈ ${token.price ? (parseFloat(value || "0") * token.price).toFixed(2) : "0.00"}
       </div>
     </div>
   );
