@@ -121,112 +121,134 @@ function shortenAddress(address: string): string {
 }
 
 async function getRecentSwaps(walletAddress: string): Promise<Transaction[]> {
-  console.log(`Fetching swaps for wallet: ${walletAddress}`);
+  const walletLower = walletAddress.toLowerCase();
+  const paddedAddress = padAddress(walletLower);
+
+  const decodeTopicAddress = (topic?: string) => {
+    if (!topic || topic.length < 66) return null;
+    return ("0x" + topic.slice(26)).toLowerCase();
+  };
+
+  console.log(`Fetching swaps for wallet: ${walletLower}`);
 
   const latestBlock = await getLatestBlock();
 
-  // Provider limits differ; keep lookback small and scan in chunks.
-  const LOOKBACK_BLOCKS = 20000; // ~9-12 hours on Base
-  const CHUNK_SIZE = 5000;
+  // Provider limits differ; we scan backwards in chunks and stop early once we have enough candidates.
+  const LOOKBACK_BLOCKS = 200000; // ~4-5 days on Base
+  const CHUNK_SIZE = 5000; // safe under common eth_getLogs range limits
 
   const startBlock = Math.max(0, latestBlock - LOOKBACK_BLOCKS);
-  const paddedAddress = padAddress(walletAddress);
 
-  console.log(`Scanning blocks ${startBlock} to ${latestBlock} in chunks of ${CHUNK_SIZE}`);
+  console.log(`Scanning incoming transfers from blocks ${startBlock} to ${latestBlock} in chunks of ${CHUNK_SIZE}`);
 
-  const txMap = new Map<string, { from: any[]; to: any[]; blockNumber: string }>();
+  // Collect tx hashes where the wallet RECEIVED a token transfer.
+  // This catches token->token and ETH->token swaps (ETH has no Transfer log).
+  const incomingByTx = new Map<string, { log: any; blockNumber: string }>();
 
-  // Iterate backwards so we find the newest swaps first.
   for (let chunkTo = latestBlock; chunkTo >= startBlock; chunkTo -= CHUNK_SIZE) {
     const chunkFrom = Math.max(startBlock, chunkTo - CHUNK_SIZE + 1);
 
     const fromBlockHex = "0x" + chunkFrom.toString(16);
     const toBlockHex = "0x" + chunkTo.toString(16);
 
-    console.log(`Fetching logs for range ${chunkFrom}-${chunkTo}`);
+    console.log(`Fetching incoming logs for range ${chunkFrom}-${chunkTo}`);
 
-    let logsFrom: any[] = [];
     let logsTo: any[] = [];
 
     try {
-      [logsFrom, logsTo] = await Promise.all([
-        rpcCallWithFallback('eth_getLogs', [{
-          fromBlock: fromBlockHex,
-          toBlock: toBlockHex,
-          topics: [TRANSFER_TOPIC, paddedAddress, null],
-        }]),
-        rpcCallWithFallback('eth_getLogs', [{
-          fromBlock: fromBlockHex,
-          toBlock: toBlockHex,
-          topics: [TRANSFER_TOPIC, null, paddedAddress],
-        }]),
-      ]);
+      logsTo = await rpcCallWithFallback('eth_getLogs', [{
+        fromBlock: fromBlockHex,
+        toBlock: toBlockHex,
+        topics: [TRANSFER_TOPIC, null, paddedAddress],
+      }]);
     } catch (err) {
       console.error(`Chunk ${chunkFrom}-${chunkTo} failed:`, err);
-      // Try next chunk/provider; do not fail the whole request.
       continue;
     }
 
-    for (const log of logsFrom || []) {
-      if (!txMap.has(log.transactionHash)) {
-        txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
-      }
-      txMap.get(log.transactionHash)!.from.push(log);
-    }
-
     for (const log of logsTo || []) {
-      if (!txMap.has(log.transactionHash)) {
-        txMap.set(log.transactionHash, { from: [], to: [], blockNumber: log.blockNumber });
+      // Keep the first incoming transfer per tx (good enough for a summary row)
+      if (!incomingByTx.has(log.transactionHash)) {
+        incomingByTx.set(log.transactionHash, { log, blockNumber: log.blockNumber });
       }
-      txMap.get(log.transactionHash)!.to.push(log);
     }
 
-    // If we already have a decent pool of candidate txs, stop early.
-    if (txMap.size >= 80) break;
+    // Stop early if we have enough candidate txs to inspect.
+    if (incomingByTx.size >= 40) break;
   }
 
-  console.log(`Collected transfers from ${txMap.size} transactions`);
+  console.log(`Collected ${incomingByTx.size} candidate txs with incoming transfers`);
 
-  const potentialSwaps = Array.from(txMap.entries())
-    .filter(([_, data]) => data.from.length > 0 && data.to.length > 0)
-    .sort((a, b) => parseInt(b[1].blockNumber, 16) - parseInt(a[1].blockNumber, 16))
-    .slice(0, 10);
-
-  console.log(`Found ${potentialSwaps.length} potential swap transactions`);
+  const sortedCandidates = Array.from(incomingByTx.entries())
+    .sort((a, b) => parseInt(b[1].blockNumber, 16) - parseInt(a[1].blockNumber, 16));
 
   const transactions: Transaction[] = [];
 
-  for (const [txHash, data] of potentialSwaps) {
+  for (const [txHash, { log: incomingLog, blockNumber }] of sortedCandidates) {
+    if (transactions.length >= 10) break;
+
     try {
-      const fromLog = data.from[0];
-      const toLog = data.to[0];
+      const tx = await rpcCallWithFallback('eth_getTransactionByHash', [txHash]);
+      if (!tx || (tx.from || '').toLowerCase() !== walletLower) {
+        continue;
+      }
 
-      const fromTokenAddr = fromLog.address.toLowerCase();
-      const toTokenAddr = toLog.address.toLowerCase();
+      const receipt = await rpcCallWithFallback('eth_getTransactionReceipt', [txHash]);
+      if (!receipt || !Array.isArray(receipt.logs)) continue;
 
-      if (fromTokenAddr === toTokenAddr) continue;
+      // Find an outgoing Transfer from the wallet (token -> ...)
+      let outgoingLog: any | null = null;
+      for (const l of receipt.logs) {
+        if (!l?.topics || l.topics[0] !== TRANSFER_TOPIC) continue;
+        const fromAddr = decodeTopicAddress(l.topics[1]);
+        if (fromAddr === walletLower) {
+          outgoingLog = l;
+          break;
+        }
+      }
 
-      const fromTokenInfo = TOKEN_INFO[fromTokenAddr] || { symbol: shortenAddress(fromLog.address), decimals: 18 };
-      const toTokenInfo = TOKEN_INFO[toTokenAddr] || { symbol: shortenAddress(toLog.address), decimals: 18 };
+      const valueWei = tx.value ? BigInt(tx.value) : 0n;
 
-      const fromAmount = formatAmount(fromLog.data, fromTokenInfo.decimals);
-      const toAmount = formatAmount(toLog.data, toTokenInfo.decimals);
+      // Determine fromToken/fromAmount
+      let fromTokenSymbol: string;
+      let fromAmount: string;
 
-      const timestamp = await getBlockTimestamp(data.blockNumber);
+      if (outgoingLog) {
+        const fromTokenAddr = (outgoingLog.address || '').toLowerCase();
+        const info = TOKEN_INFO[fromTokenAddr] || { symbol: shortenAddress(outgoingLog.address), decimals: 18 };
+        fromTokenSymbol = info.symbol;
+        fromAmount = formatAmount(outgoingLog.data, info.decimals);
+      } else if (valueWei > 0n) {
+        fromTokenSymbol = 'ETH';
+        fromAmount = formatAmount('0x' + valueWei.toString(16), 18);
+      } else {
+        // Not a swap-like tx (could be just receiving tokens)
+        continue;
+      }
+
+      // Determine toToken/toAmount from the incoming Transfer
+      const toTokenAddr = (incomingLog.address || '').toLowerCase();
+      const toInfo = TOKEN_INFO[toTokenAddr] || { symbol: shortenAddress(incomingLog.address), decimals: 18 };
+      const toTokenSymbol = toInfo.symbol;
+      const toAmount = formatAmount(incomingLog.data, toInfo.decimals);
+
+      if (fromTokenSymbol === toTokenSymbol) continue;
+
+      const timestamp = await getBlockTimestamp(blockNumber);
 
       transactions.push({
         id: txHash,
         hash: txHash,
-        fromToken: fromTokenInfo.symbol,
-        toToken: toTokenInfo.symbol,
+        fromToken: fromTokenSymbol,
+        toToken: toTokenSymbol,
         fromAmount,
         toAmount,
         status: 'completed',
         timestamp: new Date(timestamp * 1000),
-        blockNumber: parseInt(data.blockNumber, 16),
+        blockNumber: parseInt(blockNumber, 16),
       });
     } catch (err) {
-      console.error(`Error processing tx ${txHash}:`, err);
+      console.error(`Error processing candidate ${txHash}:`, err);
     }
   }
 
