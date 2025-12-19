@@ -86,12 +86,12 @@ const SlippageSettingsModal = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {PRESET_SLIPPAGES.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => handlePresetClick(preset)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                     slippage === preset && !customSlippage
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary/60 text-foreground hover:bg-secondary"
@@ -101,13 +101,13 @@ const SlippageSettingsModal = ({
                 </button>
               ))}
 
-              <div className="flex-1 relative">
+              <div className="flex-1 min-w-[80px] relative">
                 <input
                   type="text"
                   value={customSlippage}
                   onChange={(e) => handleCustomSlippageChange(e.target.value)}
                   placeholder="Custom"
-                  className={`w-full py-2 px-3 rounded-xl text-sm font-medium bg-secondary/60 text-foreground placeholder:text-muted-foreground/50 outline-none border transition-all ${
+                  className={`w-full py-2 px-3 pr-7 rounded-xl text-sm font-medium bg-secondary/60 text-foreground placeholder:text-muted-foreground/50 outline-none border transition-all ${
                     customSlippage
                       ? "border-primary"
                       : "border-transparent hover:bg-secondary"
