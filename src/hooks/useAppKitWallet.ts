@@ -1,6 +1,6 @@
 import { useAppKitAccount, useAppKitProvider, useDisconnect } from '@reown/appkit/react';
 import { BrowserProvider, formatEther } from 'ethers';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Eip1193Provider } from 'ethers';
 import { toast } from 'sonner';
 
@@ -28,6 +28,7 @@ export const useAppKitWallet = () => {
   const { address, isConnected, status } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
   const { disconnect: appKitDisconnect } = useDisconnect();
+  const hasAutoSwitched = useRef(false);
 
   const [state, setState] = useState<WalletState>({
     isConnected: false,
@@ -75,27 +76,7 @@ export const useAppKitWallet = () => {
     }
   }, [walletProvider]);
 
-  // Check current chain and auto-switch to Base
-  const checkAndSwitchToBase = useCallback(async () => {
-    if (!walletProvider) return;
-    
-    try {
-      const chainId = await (walletProvider as any).request({ method: 'eth_chainId' }) as string;
-      setState(prev => ({ ...prev, chainId, isOnBase: chainId === BASE_CHAIN_ID }));
-      
-      if (chainId !== BASE_CHAIN_ID) {
-        toast.info('Switching to Base network...', { id: 'switch-chain' });
-        const switched = await switchToBase();
-        if (switched) {
-          toast.success('Connected to Base network', { id: 'switch-chain' });
-        }
-      }
-    } catch (error) {
-      console.error('Error checking chain:', error);
-    }
-  }, [walletProvider, switchToBase]);
-
-  // Fetch balance when connected
+  // Fetch balance
   const fetchBalance = useCallback(async () => {
     if (!walletProvider || !address) return;
     
@@ -109,17 +90,46 @@ export const useAppKitWallet = () => {
     }
   }, [walletProvider, address]);
 
+  // Check current chain and auto-switch to Base
+  const checkAndSwitchToBase = useCallback(async () => {
+    if (!walletProvider || hasAutoSwitched.current) return;
+    
+    try {
+      const chainId = await (walletProvider as any).request({ method: 'eth_chainId' }) as string;
+      const isOnBase = chainId === BASE_CHAIN_ID;
+      setState(prev => ({ ...prev, chainId, isOnBase }));
+      
+      if (!isOnBase) {
+        hasAutoSwitched.current = true;
+        toast.info('Switching to Base network...', { id: 'switch-chain' });
+        const switched = await switchToBase();
+        if (switched) {
+          toast.success('Connected to Base network', { id: 'switch-chain' });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking chain:', error);
+    }
+  }, [walletProvider, switchToBase]);
+
   // Update state when connection status changes
   useEffect(() => {
+    const isActuallyConnecting = status === 'connecting';
+    
     setState(prev => ({
       ...prev,
       isConnected,
       address: address || null,
-      isConnecting: status === 'connecting',
+      isConnecting: isActuallyConnecting,
     }));
 
+    // Reset auto-switch flag when disconnected
+    if (!isConnected) {
+      hasAutoSwitched.current = false;
+    }
+
+    // Auto-switch to Base and fetch balance when connected
     if (isConnected && address && walletProvider) {
-      // Auto-switch to Base and fetch balance
       checkAndSwitchToBase();
       fetchBalance();
     }
@@ -133,29 +143,43 @@ export const useAppKitWallet = () => {
       const isOnBase = chainId === BASE_CHAIN_ID;
       setState(prev => ({ ...prev, chainId, isOnBase }));
       
-      if (!isOnBase) {
+      if (!isOnBase && isConnected) {
         toast.warning('Please switch to Base network for best experience', {
           action: {
             label: 'Switch',
             onClick: () => switchToBase(),
           },
         });
-      } else {
+      } else if (isOnBase) {
         fetchBalance();
       }
     };
 
-    (walletProvider as any).on?.('chainChanged', handleChainChanged);
+    const provider = walletProvider as any;
+    if (provider.on) {
+      provider.on('chainChanged', handleChainChanged);
+    }
 
     return () => {
-      (walletProvider as any).removeListener?.('chainChanged', handleChainChanged);
+      if (provider.removeListener) {
+        provider.removeListener('chainChanged', handleChainChanged);
+      }
     };
-  }, [walletProvider, switchToBase, fetchBalance]);
+  }, [walletProvider, switchToBase, fetchBalance, isConnected]);
 
   const connect = useCallback(async () => {
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
     try {
       const { appkit } = await import('@/config/appkit');
+      
+      // Listen for modal close to reset connecting state
+      const unsubscribe = appkit.subscribeEvents((event: any) => {
+        if (event.data?.event === 'MODAL_CLOSE') {
+          setState(prev => ({ ...prev, isConnecting: false }));
+          unsubscribe();
+        }
+      });
+      
       appkit.open();
     } catch (error) {
       setState(prev => ({
