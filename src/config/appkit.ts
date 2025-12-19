@@ -39,19 +39,5 @@ export const appkit = createAppKit({
   enableWalletGuide: false,
 });
 
-// Hide "UX by Reown" branding via CSS
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    w3m-legal-footer,
-    wui-flex[data-testid="w3m-legal-footer"],
-    [class*="legal"],
-    w3m-modal footer,
-    .w3m-legal-container {
-      display: none !important;
-    }
-  `;
-  document.head.appendChild(style);
-}
 
 export { networks, projectId };
