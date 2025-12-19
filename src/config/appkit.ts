@@ -51,29 +51,59 @@ if (typeof window !== 'undefined') {
     const hideInShadow = (root: ShadowRoot | Element) => {
       const selectors = [
         'w3m-legal-footer',
-        'wui-legal-footer', 
+        'wui-legal-footer',
         'w3m-legal-checkbox',
         '[data-testid*="legal"]',
         'wui-flex:has(wui-text[data-testid*="legal"])',
       ];
 
-      selectors.forEach(selector => {
+      const hideEl = (el: Element | null) => {
+        let node: Element | null = el;
+        for (let i = 0; i < 3 && node; i++) {
+          try {
+            (node as HTMLElement).style.setProperty('display', 'none', 'important');
+            (node as HTMLElement).style.setProperty('visibility', 'hidden', 'important');
+            (node as HTMLElement).style.setProperty('height', '0', 'important');
+            (node as HTMLElement).style.setProperty('overflow', 'hidden', 'important');
+            (node as HTMLElement).style.setProperty('opacity', '0', 'important');
+            (node as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
+          } catch {
+            // ignore
+          }
+          node = node.parentElement;
+        }
+      };
+
+      // Selector-based hiding
+      selectors.forEach((selector) => {
         try {
-          const elements = root.querySelectorAll(selector);
-          elements.forEach(el => {
-            (el as HTMLElement).style.display = 'none';
-          });
-        } catch (e) {
+          root.querySelectorAll(selector).forEach((el) => hideEl(el));
+        } catch {
           // Ignore selector errors
         }
       });
 
-      // Check nested shadow roots
-      root.querySelectorAll('*').forEach(el => {
-        if ((el as any).shadowRoot) {
-          hideInShadow((el as any).shadowRoot);
-        }
-      });
+      // Text-based hiding (handles "UX by Reown" / "Powered by Reown" variants)
+      try {
+        const all = root.querySelectorAll('*');
+        all.forEach((el) => {
+          const text = (el.textContent || '').trim().toLowerCase();
+          if (!text) return;
+
+          const isBrandLine =
+            (text.includes('ux by') || text.includes('powered by')) && text.includes('reown');
+
+          if (isBrandLine) hideEl(el);
+        });
+
+        // Check nested shadow roots
+        all.forEach((el) => {
+          const sr = (el as any).shadowRoot as ShadowRoot | undefined;
+          if (sr) hideInShadow(sr);
+        });
+      } catch {
+        // ignore
+      }
     };
 
     hideInShadow(modal.shadowRoot);
