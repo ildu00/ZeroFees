@@ -3,6 +3,7 @@ import SwapCard from "@/components/SwapCard";
 import Stats from "@/components/Stats";
 import Features from "@/components/Features";
 import BackgroundEffects from "@/components/BackgroundEffects";
+import TransactionHistory from "@/components/TransactionHistory";
 
 const Index = () => {
   return (
@@ -27,6 +28,11 @@ const Index = () => {
           {/* Swap Interface */}
           <div className="flex justify-center mb-8">
             <SwapCard />
+          </div>
+
+          {/* Transaction History */}
+          <div className="mt-12 mb-16">
+            <TransactionHistory />
           </div>
 
           {/* Stats */}
