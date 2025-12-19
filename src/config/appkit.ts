@@ -29,7 +29,8 @@ export const appkit = createAppKit({
   features: {
     analytics: false,
     email: false,
-    socials: false
+    socials: false,
+    legalCheckbox: false,
   },
   themeMode: 'dark',
   themeVariables: {
@@ -39,5 +40,66 @@ export const appkit = createAppKit({
   enableWalletGuide: false,
 });
 
+// Hide branding elements via MutationObserver (for Shadow DOM)
+if (typeof window !== 'undefined') {
+  const hideReownBranding = () => {
+    // Find the w3m-modal element
+    const modal = document.querySelector('w3m-modal');
+    if (!modal?.shadowRoot) return;
+
+    // Function to hide elements recursively in shadow roots
+    const hideInShadow = (root: ShadowRoot | Element) => {
+      const selectors = [
+        'w3m-legal-footer',
+        'wui-legal-footer', 
+        'w3m-legal-checkbox',
+        '[data-testid*="legal"]',
+        'wui-flex:has(wui-text[data-testid*="legal"])',
+      ];
+
+      selectors.forEach(selector => {
+        try {
+          const elements = root.querySelectorAll(selector);
+          elements.forEach(el => {
+            (el as HTMLElement).style.display = 'none';
+          });
+        } catch (e) {
+          // Ignore selector errors
+        }
+      });
+
+      // Check nested shadow roots
+      root.querySelectorAll('*').forEach(el => {
+        if ((el as any).shadowRoot) {
+          hideInShadow((el as any).shadowRoot);
+        }
+      });
+    };
+
+    hideInShadow(modal.shadowRoot);
+  };
+
+  // Observe DOM changes to catch when modal appears
+  const observer = new MutationObserver(() => {
+    hideReownBranding();
+  });
+
+  // Start observing when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Also run periodically for a short time after modal opens
+  appkit.subscribeEvents((event: any) => {
+    if (event.data?.event === 'MODAL_OPEN') {
+      const interval = setInterval(hideReownBranding, 100);
+      setTimeout(() => clearInterval(interval), 2000);
+    }
+  });
+}
 
 export { networks, projectId };
