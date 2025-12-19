@@ -48,11 +48,13 @@ const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = fa
       <div className="flex items-center gap-3">
         <input
           type="text"
+          inputMode="decimal"
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           readOnly={readOnly}
           placeholder="0.0"
-          className="flex-1 min-w-0 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none truncate"
+          className="flex-1 min-w-0 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none truncate text-base sm:text-2xl"
+          style={{ fontSize: '16px' }}
         />
         
         <button 
