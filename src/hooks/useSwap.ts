@@ -50,8 +50,13 @@ export interface TokenBalances {
   [key: string]: string;
 }
 
+// Type for EIP-1193 provider request
+interface ProviderRequest {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
+
 export const useSwap = () => {
-  const { address, isConnected } = useWalletContext();
+  const { address, isConnected, walletProvider } = useWalletContext();
   const [prices, setPrices] = useState<TokenPrices>({});
   const [balances, setBalances] = useState<TokenBalances>({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
@@ -59,6 +64,13 @@ export const useSwap = () => {
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<SwapQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+
+  // Get provider - use walletProvider from context or fallback to window.ethereum
+  const getProvider = useCallback((): ProviderRequest | null => {
+    if (walletProvider) return walletProvider as unknown as ProviderRequest;
+    if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as ProviderRequest;
+    return null;
+  }, [walletProvider]);
 
   // Fetch token prices
   const fetchPrices = useCallback(async () => {
@@ -79,7 +91,8 @@ export const useSwap = () => {
 
   // Fetch token balances from wallet
   const fetchBalances = useCallback(async () => {
-    if (!address || !window.ethereum) {
+    const provider = getProvider();
+    if (!address || !provider) {
       setBalances({});
       return;
     }
@@ -89,7 +102,7 @@ export const useSwap = () => {
       const newBalances: TokenBalances = {};
       
       // Check if on Base network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const chainId = await provider.request({ method: 'eth_chainId' });
       if (chainId !== BASE_CHAIN_CONFIG.chainId) {
         // Not on Base, show empty balances
         setBalances({});
@@ -98,7 +111,7 @@ export const useSwap = () => {
       }
 
       // Fetch ETH balance
-      const ethBalance = await window.ethereum.request({
+      const ethBalance = await provider.request({
         method: 'eth_getBalance',
         params: [address, 'latest'],
       }) as string;
@@ -112,7 +125,7 @@ export const useSwap = () => {
           const paddedAddress = address.toLowerCase().replace('0x', '').padStart(64, '0');
           const data = `${ERC20_ABI.balanceOf}${paddedAddress}`;
           
-          const result = await window.ethereum!.request({
+          const result = await provider.request({
             method: 'eth_call',
             params: [{ to: token.address, data }, 'latest'],
           }) as string;
@@ -135,7 +148,7 @@ export const useSwap = () => {
     } finally {
       setIsLoadingBalances(false);
     }
-  }, [address]);
+  }, [address, getProvider]);
 
   // Fetch quote
   const fetchQuote = useCallback(async (
@@ -175,10 +188,11 @@ export const useSwap = () => {
 
   // Switch to Base network
   const switchToBase = useCallback(async () => {
-    if (!window.ethereum) return false;
+    const provider = getProvider();
+    if (!provider) return false;
     
     try {
-      await window.ethereum.request({
+      await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: BASE_CHAIN_CONFIG.chainId }],
       });
@@ -186,7 +200,7 @@ export const useSwap = () => {
     } catch (switchError: any) {
       if (switchError.code === 4902) {
         try {
-          await window.ethereum.request({
+          await provider.request({
             method: 'wallet_addEthereumChain',
             params: [BASE_CHAIN_CONFIG],
           });
@@ -199,14 +213,15 @@ export const useSwap = () => {
       console.error('Error switching to Base:', switchError);
       return false;
     }
-  }, []);
+  }, [getProvider]);
 
   // Check and approve token
   const approveToken = useCallback(async (
     tokenAddress: string,
     amount: string
   ) => {
-    if (!window.ethereum || !address) return false;
+    const provider = getProvider();
+    if (!provider || !address) return false;
     if (tokenAddress === BASE_TOKENS.ETH.address) return true; // No approval needed for ETH
 
     try {
@@ -215,7 +230,7 @@ export const useSwap = () => {
       const value = BigInt(amount).toString(16).padStart(64, '0');
       const data = `${ERC20_ABI.approve}${spender}${value}`;
 
-      const txHash = await window.ethereum.request({
+      const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: address,
@@ -230,7 +245,7 @@ export const useSwap = () => {
       let confirmed = false;
       for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 2000));
-        const receipt = await window.ethereum.request({
+        const receipt = await provider.request({
           method: 'eth_getTransactionReceipt',
           params: [txHash],
         });
@@ -249,7 +264,7 @@ export const useSwap = () => {
       }
       return false;
     }
-  }, [address]);
+  }, [address, getProvider]);
 
   // Execute swap
   const executeSwap = useCallback(async (
@@ -259,12 +274,13 @@ export const useSwap = () => {
     amountOutMin: string,
     slippage: number = 0.5
   ) => {
-    if (!window.ethereum || !address || !quote) return null;
+    const provider = getProvider();
+    if (!provider || !address || !quote) return null;
 
     setIsSwapping(true);
     try {
       // Switch to Base if needed
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const chainId = await provider.request({ method: 'eth_chainId' });
       if (chainId !== BASE_CHAIN_CONFIG.chainId) {
         const switched = await switchToBase();
         if (!switched) {
@@ -328,7 +344,7 @@ export const useSwap = () => {
 
       toast.info('Please confirm the swap in your wallet');
 
-      const txHash = await window.ethereum.request({
+      const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: address,
@@ -358,7 +374,7 @@ export const useSwap = () => {
     } finally {
       setIsSwapping(false);
     }
-  }, [address, quote, switchToBase, approveToken]);
+  }, [address, quote, switchToBase, approveToken, getProvider]);
 
   // Fetch prices on mount
   useEffect(() => {

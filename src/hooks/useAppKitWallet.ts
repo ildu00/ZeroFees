@@ -1,6 +1,7 @@
 import { useAppKitAccount, useAppKitProvider, useDisconnect } from '@reown/appkit/react';
 import { BrowserProvider, formatEther } from 'ethers';
 import { useState, useEffect, useCallback } from 'react';
+import type { Eip1193Provider } from 'ethers';
 
 interface WalletState {
   isConnected: boolean;
@@ -12,7 +13,7 @@ interface WalletState {
 
 export const useAppKitWallet = () => {
   const { address, isConnected, status } = useAppKitAccount();
-  const { walletProvider } = useAppKitProvider('eip155');
+  const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
   const { disconnect: appKitDisconnect } = useDisconnect();
 
   const [state, setState] = useState<WalletState>({
@@ -32,7 +33,7 @@ export const useAppKitWallet = () => {
     if (!walletProvider || !address) return;
     
     try {
-      const provider = new BrowserProvider(walletProvider as any);
+      const provider = new BrowserProvider(walletProvider);
       const balance = await provider.getBalance(address);
       const formattedBalance = parseFloat(formatEther(balance)).toFixed(4);
       setState(prev => ({ ...prev, balance: formattedBalance }));

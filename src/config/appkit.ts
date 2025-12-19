@@ -3,12 +3,8 @@ import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { base, mainnet } from '@reown/appkit/networks';
 import type { AppKitNetwork } from '@reown/appkit/networks';
 
-// Get projectId from environment
-const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '';
-
-if (!projectId) {
-  console.warn('WalletConnect Project ID not configured');
-}
+// WalletConnect Project ID (public identifier)
+const projectId = '4a8f1f90250caf4cf14abd6c1d0fe873';
 
 // Define networks
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, mainnet];
