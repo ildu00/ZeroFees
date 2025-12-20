@@ -92,18 +92,42 @@ const SwapCard = () => {
     }
   }, [prices, balances]);
 
-  // Fetch quote when input changes
+  // Detect in-app browser (MetaMask, Trust Wallet, etc.)
+  const isInAppBrowser = typeof navigator !== 'undefined' && 
+    /MetaMask|Trust|Coinbase|TokenPocket|imToken/i.test(navigator.userAgent);
+
+  // Fetch quote when input changes - with improved debounce for in-app browsers
+  const [quoteKey, setQuoteKey] = useState(0);
+
   useEffect(() => {
+    // Clear previous quote immediately when inputs change
+    if (!fromValue || parseFloat(fromValue) === 0) {
+      setToValue("");
+      return;
+    }
+
+    const decimalsIn = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+    const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+
+    // Use shorter debounce for in-app browsers
+    const debounceMs = isInAppBrowser ? 200 : 300;
     const timer = setTimeout(() => {
-      if (fromValue && parseFloat(fromValue) > 0) {
-        const decimalsIn = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
-        const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
-        fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
-      }
-    }, 500);
+      fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
+    }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [fromValue, fromToken.symbol, toToken.symbol, fetchQuote]);
+  }, [fromValue, fromToken.symbol, toToken.symbol, fetchQuote, quoteKey, isInAppBrowser]);
+
+  // Auto-refresh quote every 15 seconds when there's a valid amount
+  useEffect(() => {
+    if (!fromValue || parseFloat(fromValue) === 0) return;
+
+    const interval = setInterval(() => {
+      setQuoteKey(prev => prev + 1);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [fromValue]);
 
   // Update toValue when quote changes
   useEffect(() => {
@@ -115,6 +139,11 @@ const SwapCard = () => {
       setToValue("");
     }
   }, [quote, toToken.symbol, fromValue]);
+
+  // Force refetch quote (for manual refresh)
+  const refreshQuote = useCallback(() => {
+    setQuoteKey(prev => prev + 1);
+  }, []);
 
   const handleSwapTokens = () => {
     const tempToken = fromToken;
@@ -275,7 +304,14 @@ const SwapCard = () => {
               <Info className="w-3.5 h-3.5" />
               <span>1 {fromToken.symbol} = {exchangeRate} {toToken.symbol}</span>
             </div>
-            <span className="text-muted-foreground">~${feeUsd} fee ({feePercent}%)</span>
+            <button 
+              onClick={refreshQuote}
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              title="Refresh quote"
+            >
+              <span>~${feeUsd} fee ({feePercent}%)</span>
+              <ArrowDownUp className="w-3 h-3" />
+            </button>
           </div>
           {quote?.route && (
             <div className="flex items-center justify-between text-xs text-muted-foreground/70 mt-1">
