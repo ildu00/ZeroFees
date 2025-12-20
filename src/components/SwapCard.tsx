@@ -352,14 +352,14 @@ const SwapCard = () => {
               <div className="flex items-center gap-2">
                 <span>Slippage: {slippage}%</span>
                 {fromValue && parseFloat(fromValue) > 0 && (
-                  <span className="text-primary/70 tabular-nums w-8 text-right">↻ {refreshCountdown}s</span>
+                  <span className="text-primary/70 tabular-nums min-w-[3rem] text-right">↻ {refreshCountdown}s</span>
                 )}
               </div>
             </div>
           )}
           {!quote?.route && fromValue && parseFloat(fromValue) > 0 && (
             <div className="flex items-center justify-end text-xs text-muted-foreground/70 mt-1">
-              <span className="text-primary/70 tabular-nums w-8 text-right">↻ {refreshCountdown}s</span>
+              <span className="text-primary/70 tabular-nums min-w-[3rem] text-right">↻ {refreshCountdown}s</span>
             </div>
           )}
         </div>
