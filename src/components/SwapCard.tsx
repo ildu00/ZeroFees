@@ -99,10 +99,32 @@ const SwapCard = () => {
   // Fetch quote when input changes - with improved debounce for in-app browsers
   const [quoteKey, setQuoteKey] = useState(0);
 
+  // Instant price-based estimate (shown immediately while quote loads)
+  const instantEstimate = useCallback(() => {
+    if (!fromValue || parseFloat(fromValue) === 0) return "";
+    const fromPrice = prices[fromToken.symbol] || fromToken.price || 0;
+    const toPrice = prices[toToken.symbol] || toToken.price || 0;
+    if (!fromPrice || !toPrice) return "";
+    const estimated = (parseFloat(fromValue) * fromPrice) / toPrice;
+    return estimated.toFixed(6);
+  }, [fromValue, fromToken.symbol, toToken.symbol, prices, fromToken.price, toToken.price]);
+
+  // Show instant estimate immediately when input changes
   useEffect(() => {
-    // Clear previous quote immediately when inputs change
     if (!fromValue || parseFloat(fromValue) === 0) {
       setToValue("");
+      return;
+    }
+    // Show instant estimate right away
+    const estimate = instantEstimate();
+    if (estimate) {
+      setToValue(estimate);
+    }
+  }, [fromValue, fromToken.symbol, toToken.symbol, instantEstimate]);
+
+  // Then fetch accurate quote from API
+  useEffect(() => {
+    if (!fromValue || parseFloat(fromValue) === 0) {
       return;
     }
 
@@ -110,7 +132,7 @@ const SwapCard = () => {
     const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
 
     // Use shorter debounce for in-app browsers
-    const debounceMs = isInAppBrowser ? 200 : 300;
+    const debounceMs = isInAppBrowser ? 100 : 200;
     const timer = setTimeout(() => {
       fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
     }, debounceMs);
@@ -129,14 +151,12 @@ const SwapCard = () => {
     return () => clearInterval(interval);
   }, [fromValue]);
 
-  // Update toValue when quote changes
+  // Update toValue with accurate quote when it arrives
   useEffect(() => {
-    if (quote && quote.amountOut) {
+    if (quote && quote.amountOut && fromValue && parseFloat(fromValue) > 0) {
       const decimals = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
       const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
       setToValue(amountOut.toFixed(6));
-    } else if (!fromValue || parseFloat(fromValue) === 0) {
-      setToValue("");
     }
   }, [quote, toToken.symbol, fromValue]);
 
