@@ -99,6 +99,9 @@ const SwapCard = () => {
   // Fetch quote when input changes
   const [quoteKey, setQuoteKey] = useState(0);
 
+  // Track if we're showing estimate or actual quote
+  const isEstimate = !quote || !quote.amountOut || isLoadingQuote;
+
   // Calculate display value: use quote if available, otherwise estimate from prices
   const calculateToValue = useCallback(() => {
     if (!fromValue || parseFloat(fromValue) === 0) return "";
@@ -298,10 +301,11 @@ const SwapCard = () => {
           <TokenInput
             label="You Receive"
             token={toToken}
-            value={isLoadingQuote ? "" : toValue}
+            value={toValue}
             onChange={setToValue}
             onTokenClick={() => handleOpenTokenSelect("to")}
             readOnly
+            isEstimate={isEstimate && !!toValue}
           />
           {isLoadingQuote && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2">
