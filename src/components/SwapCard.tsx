@@ -96,33 +96,35 @@ const SwapCard = () => {
   const isInAppBrowser = typeof navigator !== 'undefined' && 
     /MetaMask|Trust|Coinbase|TokenPocket|imToken/i.test(navigator.userAgent);
 
-  // Fetch quote when input changes - with improved debounce for in-app browsers
+  // Fetch quote when input changes
   const [quoteKey, setQuoteKey] = useState(0);
 
-  // Instant price-based estimate (shown immediately while quote loads)
-  const instantEstimate = useCallback(() => {
+  // Calculate display value: use quote if available, otherwise estimate from prices
+  const calculateToValue = useCallback(() => {
     if (!fromValue || parseFloat(fromValue) === 0) return "";
+    
+    // If we have a valid quote, use it
+    if (quote && quote.amountOut) {
+      const decimals = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+      const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
+      return amountOut.toFixed(6);
+    }
+    
+    // Otherwise, estimate from prices
     const fromPrice = prices[fromToken.symbol] || fromToken.price || 0;
     const toPrice = prices[toToken.symbol] || toToken.price || 0;
     if (!fromPrice || !toPrice) return "";
     const estimated = (parseFloat(fromValue) * fromPrice) / toPrice;
     return estimated.toFixed(6);
-  }, [fromValue, fromToken.symbol, toToken.symbol, prices, fromToken.price, toToken.price]);
+  }, [fromValue, fromToken.symbol, toToken.symbol, prices, fromToken.price, toToken.price, quote, toToken.symbol]);
 
-  // Show instant estimate immediately when input changes
+  // Update toValue whenever calculation inputs change
   useEffect(() => {
-    if (!fromValue || parseFloat(fromValue) === 0) {
-      setToValue("");
-      return;
-    }
-    // Show instant estimate right away
-    const estimate = instantEstimate();
-    if (estimate) {
-      setToValue(estimate);
-    }
-  }, [fromValue, fromToken.symbol, toToken.symbol, instantEstimate]);
+    const newValue = calculateToValue();
+    setToValue(newValue);
+  }, [calculateToValue]);
 
-  // Then fetch accurate quote from API
+  // Fetch accurate quote from API
   useEffect(() => {
     if (!fromValue || parseFloat(fromValue) === 0) {
       return;
@@ -132,7 +134,7 @@ const SwapCard = () => {
     const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
 
     // Use shorter debounce for in-app browsers
-    const debounceMs = isInAppBrowser ? 100 : 200;
+    const debounceMs = isInAppBrowser ? 50 : 150;
     const timer = setTimeout(() => {
       fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
     }, debounceMs);
@@ -150,15 +152,6 @@ const SwapCard = () => {
 
     return () => clearInterval(interval);
   }, [fromValue]);
-
-  // Update toValue with accurate quote when it arrives
-  useEffect(() => {
-    if (quote && quote.amountOut && fromValue && parseFloat(fromValue) > 0) {
-      const decimals = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
-      const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
-      setToValue(amountOut.toFixed(6));
-    }
-  }, [quote, toToken.symbol, fromValue]);
 
   // Force refetch quote (for manual refresh)
   const refreshQuote = useCallback(() => {
