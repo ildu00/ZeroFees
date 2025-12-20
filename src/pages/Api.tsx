@@ -3,26 +3,56 @@ import Footer from "@/components/Footer";
 import { Code, Copy, Check, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Highlight, themes } from "prism-react-renderer";
+import { toast } from "sonner";
 
 const CodeBlock = ({ code, language = "json" }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
   };
 
   return (
     <div className="relative group">
-      <pre className="bg-secondary/50 border border-border/30 rounded-lg p-4 overflow-x-auto text-sm">
-        <code className="text-muted-foreground">{code}</code>
-      </pre>
+      <Highlight theme={themes.nightOwl} code={code.trim()} language={language as any}>
+        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+          <pre 
+            className="rounded-lg p-4 overflow-x-auto text-sm border border-border/30" 
+            style={{ ...style, background: 'hsl(var(--secondary) / 0.5)' }}
+          >
+            {tokens.map((line, i) => (
+              <div key={i} {...getLineProps({ line })} className="table-row">
+                <span className="table-cell pr-4 text-muted-foreground/50 select-none text-right" style={{ minWidth: '2rem' }}>
+                  {i + 1}
+                </span>
+                <span className="table-cell">
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token })} />
+                  ))}
+                </span>
+              </div>
+            ))}
+          </pre>
+        )}
+      </Highlight>
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 p-2 rounded-md bg-secondary/80 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 right-2 p-2 rounded-md bg-background/80 border border-border/30 opacity-0 group-hover:opacity-100 transition-all hover:bg-secondary"
+        title="Copy to clipboard"
       >
-        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+        {copied ? (
+          <Check className="w-4 h-4 text-green-500" />
+        ) : (
+          <Copy className="w-4 h-4 text-muted-foreground" />
+        )}
       </button>
     </div>
   );
