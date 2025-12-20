@@ -33,10 +33,14 @@ const PoolCard = ({ pool, onAddLiquidity }: PoolCardProps) => {
             />
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold flex items-center" title={`${pool.token0.symbol}/${pool.token1.symbol}`}>
-              <span className={pool.token0.symbol.length > 6 ? "truncate max-w-[50px]" : ""}>{pool.token0.symbol}</span>
-              <span>/</span>
-              <span className={pool.token1.symbol.length > 6 ? "truncate max-w-[50px]" : ""}>{pool.token1.symbol}</span>
+            <h3 className="font-semibold" title={`${pool.token0.symbol}/${pool.token1.symbol}`}>
+              {pool.token0.symbol.length > 6 
+                ? `${pool.token0.symbol.slice(0, 6)}...` 
+                : pool.token0.symbol}
+              /
+              {pool.token1.symbol.length > 6 
+                ? `${pool.token1.symbol.slice(0, 6)}...` 
+                : pool.token1.symbol}
             </h3>
             <p className="text-xs text-muted-foreground">{pool.feeTier ? `${pool.feeTier}%` : '0.3%'} fee tier</p>
           </div>
