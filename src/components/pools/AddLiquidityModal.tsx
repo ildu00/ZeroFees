@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { Pool } from "@/hooks/useUniswapPools";
 import { useAddLiquidity, FEE_TIERS } from "@/hooks/useAddLiquidity";
 import TokenSelectModal, { Token, allTokens } from "@/components/TokenSelectModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddLiquidityModalProps {
   open: boolean;
@@ -86,45 +87,15 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     
     setIsFetchingPrice(true);
     try {
-      // Map token symbols to CoinGecko IDs
-      const geckoIds: Record<string, string> = {
-        'WETH': 'ethereum',
-        'ETH': 'ethereum',
-        'USDC': 'usd-coin',
-        'USDbC': 'usd-coin',
-        'USDT': 'tether',
-        'DAI': 'dai',
-        'WBTC': 'wrapped-bitcoin',
-        'cbETH': 'coinbase-wrapped-staked-eth',
-        'rETH': 'rocket-pool-eth',
-      };
+      // Fetch price from edge function
+      const { data, error } = await supabase.functions.invoke('get-token-price', {
+        body: { token0: token0.symbol, token1: token1.symbol }
+      });
       
-      const id0 = geckoIds[token0.symbol];
-      const id1 = geckoIds[token1.symbol];
+      if (error) throw error;
       
-      if (!id0 || !id1) {
-        // If tokens not in mapping, use default range
-        console.log("Tokens not in price mapping, using default range");
-        setPriceLower("0.5");
-        setPriceUpper("2.0");
-        setCurrentPrice(null);
-        return;
-      }
-      
-      // Fetch prices from CoinGecko
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${id0},${id1}&vs_currencies=usd`
-      );
-      
-      if (!response.ok) throw new Error("Failed to fetch prices");
-      
-      const data = await response.json();
-      const price0 = data[id0]?.usd;
-      const price1 = data[id1]?.usd;
-      
-      if (price0 && price1) {
-        // Calculate price of token0 in terms of token1
-        const price = price0 / price1;
+      if (data?.price) {
+        const price = data.price;
         setCurrentPrice(price);
         
         // Calculate range based on percentage
@@ -134,12 +105,18 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
         
         setPriceLower(lower.toFixed(6));
         setPriceUpper(upper.toFixed(6));
+      } else {
+        console.log("Price not available, using default range");
+        setPriceLower("0.5");
+        setPriceUpper("2.0");
+        setCurrentPrice(null);
       }
     } catch (error) {
       console.error("Error fetching price:", error);
       // Fallback to default range
       setPriceLower("0.5");
       setPriceUpper("2.0");
+      setCurrentPrice(null);
     } finally {
       setIsFetchingPrice(false);
     }
