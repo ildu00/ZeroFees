@@ -150,15 +150,15 @@ const ImportTokenModal = ({ isOpen, onClose, onImport }: ImportTokenModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-start md:items-center justify-center pt-20 md:pt-0 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4">
+      <div className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4 my-4">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/30">
           <h2 className="text-lg font-semibold">Import Token</h2>

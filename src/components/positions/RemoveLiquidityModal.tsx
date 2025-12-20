@@ -52,15 +52,15 @@ const RemoveLiquidityModal = ({
   const liquidityToRemove = (BigInt(position.liquidity) * BigInt(percent)) / BigInt(100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center pt-20 md:pt-0 overflow-y-auto p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in">
+      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in my-4">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/30">
           <h2 className="text-lg font-semibold">Remove Liquidity</h2>
