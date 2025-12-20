@@ -1,6 +1,6 @@
 import { useAppKitAccount, useAppKitProvider, useDisconnect } from '@reown/appkit/react';
 import { BrowserProvider, formatEther } from 'ethers';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Eip1193Provider } from 'ethers';
 import { toast } from 'sonner';
 
@@ -28,7 +28,6 @@ export const useAppKitWallet = () => {
   const { address, isConnected, status } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
   const { disconnect: appKitDisconnect } = useDisconnect();
-  const hasAutoSwitched = useRef(false);
 
   const [state, setState] = useState<WalletState>({
     isConnected: false,
@@ -90,27 +89,18 @@ export const useAppKitWallet = () => {
     }
   }, [walletProvider, address]);
 
-  // Check current chain and auto-switch to Base
-  const checkAndSwitchToBase = useCallback(async () => {
-    if (!walletProvider || hasAutoSwitched.current) return;
-    
+  // Sync current chain (no auto-switch on connect; WalletConnect + MetaMask iOS can be flaky)
+  const syncChain = useCallback(async () => {
+    if (!walletProvider) return;
+
     try {
-      const chainId = await (walletProvider as any).request({ method: 'eth_chainId' }) as string;
+      const chainId = (await (walletProvider as any).request({ method: 'eth_chainId' })) as string;
       const isOnBase = chainId === BASE_CHAIN_ID;
       setState(prev => ({ ...prev, chainId, isOnBase }));
-      
-      if (!isOnBase) {
-        hasAutoSwitched.current = true;
-        toast.info('Switching to Base network...', { id: 'switch-chain' });
-        const switched = await switchToBase();
-        if (switched) {
-          toast.success('Connected to Base network', { id: 'switch-chain' });
-        }
-      }
     } catch (error) {
       console.error('Error checking chain:', error);
     }
-  }, [walletProvider, switchToBase]);
+  }, [walletProvider]);
 
   // Update state when connection status changes
   useEffect(() => {
@@ -120,29 +110,22 @@ export const useAppKitWallet = () => {
       ...prev,
       isConnected,
       address: address || null,
-      isConnecting: isActuallyConnecting,
+      // Ensure we stop showing "connecting" once connected
+      isConnecting: isConnected ? false : isActuallyConnecting,
     }));
 
-    // Reset auto-switch flag when disconnected
-    if (!isConnected) {
-      hasAutoSwitched.current = false;
-    }
-
-    // Auto-switch to Base and fetch balance when connected.
-    // On mobile WalletConnect, doing RPC requests immediately can interrupt the wallet handshake
-    // (shows blank/white sheet in some wallets). Delay slightly after connect.
+    // After connect, delay all RPC calls (chain/balance) to avoid breaking the mobile handshake.
     if (isConnected && address && walletProvider) {
       const t = window.setTimeout(() => {
-        checkAndSwitchToBase();
+        syncChain();
         fetchBalance();
-      }, 800);
+      }, 5000);
 
       return () => window.clearTimeout(t);
     }
 
     return;
-  }, [isConnected, address, status, walletProvider, fetchBalance, checkAndSwitchToBase]);
-
+  }, [isConnected, address, status, walletProvider, fetchBalance, syncChain]);
   // Listen for chain changes
   useEffect(() => {
     if (!walletProvider) return;
@@ -179,16 +162,20 @@ export const useAppKitWallet = () => {
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
     try {
       const { appkit } = await import('@/config/appkit');
-      
-      // Listen for modal close to reset connecting state
+
+      // Debug: helps diagnose flaky iOS WalletConnect/MetaMask handshakes
       const unsubscribe = appkit.subscribeEvents((event: any) => {
-        if (event.data?.event === 'MODAL_CLOSE') {
+        const evt = event?.data?.event;
+        if (evt) console.log('[WC]', evt, event?.data);
+
+        // Always stop the local "connecting" spinner once the modal closes
+        if (evt === 'MODAL_CLOSE') {
           setState(prev => ({ ...prev, isConnecting: false }));
           unsubscribe();
         }
       });
-      
-      appkit.open();
+
+      await appkit.open({ view: 'Connect' });
     } catch (error) {
       setState(prev => ({
         ...prev,
