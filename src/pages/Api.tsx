@@ -58,7 +58,59 @@ const CodeBlock = ({ code, language = "json" }: { code: string; language?: strin
   );
 };
 
-const ApiSection = ({ 
+const ContractAddressRow = ({ name, address, isLast }: { name: string; address: string; isLast: boolean }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      toast.success("Address copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <div 
+      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-3 ${
+        !isLast ? "border-b border-border/20" : ""
+      }`}
+    >
+      <span className="text-sm font-medium">{name}</span>
+      <div className="flex items-center gap-2">
+        <code className="text-xs bg-secondary/50 px-2 py-1.5 rounded font-mono truncate max-w-[200px] sm:max-w-[240px] md:max-w-none">
+          {address}
+        </code>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleCopy}
+            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
+            title="Copy address"
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-green-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </button>
+          <a
+            href={`https://basescan.org/address/${address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
+            title="View on BaseScan"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ApiSection = ({
   title, 
   method, 
   endpoint, 
@@ -639,17 +691,12 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
                     { name: "WETH", address: "0x4200000000000000000000000000000000000006" },
                     { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
                   ].map((contract, i, arr) => (
-                    <div 
+                    <ContractAddressRow 
                       key={contract.name} 
-                      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-3 ${
-                        i < arr.length - 1 ? "border-b border-border/20" : ""
-                      }`}
-                    >
-                      <span className="text-sm font-medium">{contract.name}</span>
-                      <code className="text-xs bg-secondary/50 px-2 py-1.5 rounded font-mono truncate max-w-full sm:max-w-[280px] md:max-w-none">
-                        {contract.address}
-                      </code>
-                    </div>
+                      name={contract.name} 
+                      address={contract.address}
+                      isLast={i === arr.length - 1}
+                    />
                   ))}
                 </div>
 
