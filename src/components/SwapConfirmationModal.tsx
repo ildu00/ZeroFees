@@ -1,6 +1,7 @@
 import { ArrowDown, Info, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Token } from "./TokenSelectModal";
+import { useEffect } from "react";
 
 interface SwapConfirmationModalProps {
   isOpen: boolean;
@@ -31,6 +32,21 @@ const SwapConfirmationModal = ({
   exchangeRate,
   minReceived,
 }: SwapConfirmationModalProps) => {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const fromUsdValue = fromToken.price ? (parseFloat(fromValue) * fromToken.price).toFixed(2) : "0.00";
@@ -45,7 +61,10 @@ const SwapConfirmationModal = ({
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4">
+      <div 
+        className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4 max-h-[90vh] overflow-y-auto overscroll-contain"
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 border-b border-border/30">
           <h2 className="text-lg font-semibold text-center">Confirm Swap</h2>
