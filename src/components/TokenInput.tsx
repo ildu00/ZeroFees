@@ -8,9 +8,10 @@ interface TokenInputProps {
   onChange?: (value: string) => void;
   onTokenClick?: () => void;
   readOnly?: boolean;
+  isEstimate?: boolean;
 }
 
-const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = false }: TokenInputProps) => {
+const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = false, isEstimate = false }: TokenInputProps) => {
   const handleMaxClick = () => {
     if (onChange && token.balance) {
       // Parse the balance and set it, leaving a small amount for gas if it's ETH
@@ -46,16 +47,21 @@ const TokenInput = ({ label, token, value, onChange, onTokenClick, readOnly = fa
       </div>
       
       <div className="flex items-center gap-3">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange?.(e.target.value)}
-          readOnly={readOnly}
-          placeholder="0.0"
-          className="flex-1 min-w-0 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none truncate text-base sm:text-2xl"
-          style={{ fontSize: '16px' }}
-        />
+        <div className="flex-1 min-w-0 flex items-center gap-1">
+          {isEstimate && value && (
+            <span className="text-muted-foreground text-2xl font-medium">~</span>
+          )}
+          <input
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={(e) => onChange?.(e.target.value)}
+            readOnly={readOnly}
+            placeholder="0.0"
+            className="flex-1 min-w-0 bg-transparent text-2xl font-medium text-foreground placeholder:text-muted-foreground/50 outline-none truncate text-base sm:text-2xl"
+            style={{ fontSize: '16px' }}
+          />
+        </div>
         
         <button 
           onClick={onTokenClick}
