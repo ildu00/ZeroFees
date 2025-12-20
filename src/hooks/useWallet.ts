@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 
-declare global {
-  interface Window {
-    ethereum?: {
-      isMetaMask?: boolean;
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
-    };
-  }
+interface EthereumProvider {
+  isMetaMask?: boolean;
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, callback: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
 }
+
+const getEthereum = (): EthereumProvider | undefined => {
+  if (typeof window !== 'undefined' && window.ethereum) {
+    return window.ethereum as unknown as EthereumProvider;
+  }
+  return undefined;
+};
 
 interface WalletState {
   isConnected: boolean;
@@ -48,9 +51,10 @@ export const useWallet = () => {
   };
 
   const getBalance = useCallback(async (address: string) => {
-    if (!window.ethereum) return null;
+    const ethereum = getEthereum();
+    if (!ethereum) return null;
     try {
-      const balance = await window.ethereum.request({
+      const balance = await ethereum.request({
         method: 'eth_getBalance',
         params: [address, 'latest'],
       });
@@ -61,8 +65,9 @@ export const useWallet = () => {
   }, []);
 
   const connect = useCallback(async () => {
+    const ethereum = getEthereum();
     // If no ethereum provider and on mobile, open MetaMask app
-    if (!window.ethereum) {
+    if (!ethereum) {
       if (isMobile()) {
         openMetaMaskDeepLink();
         return;
@@ -75,7 +80,7 @@ export const useWallet = () => {
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
 
     try {
-      const accounts = await window.ethereum.request({
+      const accounts = await ethereum.request({
         method: 'eth_requestAccounts',
       }) as string[];
 
@@ -111,7 +116,8 @@ export const useWallet = () => {
   }, []);
 
   useEffect(() => {
-    if (!window.ethereum) return;
+    const ethereum = getEthereum();
+    if (!ethereum) return;
 
     const handleAccountsChanged = async (accounts: unknown) => {
       const accountList = accounts as string[];
@@ -128,21 +134,22 @@ export const useWallet = () => {
       window.location.reload();
     };
 
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
+    ethereum.on('accountsChanged', handleAccountsChanged);
+    ethereum.on('chainChanged', handleChainChanged);
 
     return () => {
-      window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum?.removeListener('chainChanged', handleChainChanged);
+      ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      ethereum.removeListener('chainChanged', handleChainChanged);
     };
   }, [state.isConnected, disconnect, getBalance]);
 
   // Check if already connected on mount
   useEffect(() => {
     const checkConnection = async () => {
-      if (!window.ethereum) return;
+      const ethereum = getEthereum();
+      if (!ethereum) return;
       try {
-        const accounts = await window.ethereum.request({
+        const accounts = await ethereum.request({
           method: 'eth_accounts',
         }) as string[];
         if (accounts.length > 0) {

@@ -87,7 +87,11 @@ const PoolCard = ({ pool, onAddLiquidity }: PoolCardProps) => {
           variant="glass" 
           size="icon" 
           className="shrink-0"
-          onClick={() => window.open(`https://basescan.org/address/${pool.id}`, '_blank')}
+          onClick={() => {
+            // Extract address from pool.id (format: "base_0x..." or "0x...")
+            const address = pool.id.includes('_') ? pool.id.split('_').pop() : pool.id;
+            window.open(`https://basescan.org/address/${address}`, '_blank');
+          }}
         >
           <ArrowUpRight className="w-4 h-4" />
         </Button>
