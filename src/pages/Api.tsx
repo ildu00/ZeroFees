@@ -1,11 +1,111 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Code, Copy, Check, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Code, Copy, Check, ExternalLink, List } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Highlight, themes } from "prism-react-renderer";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
+const tocItems = [
+  { id: "base-url", label: "Base URL" },
+  { id: "authentication", label: "Authentication" },
+  { id: "swap-api", label: "Swap API" },
+  { id: "pools-api", label: "Pools API" },
+  { id: "wallet-api", label: "Wallet API" },
+  { id: "supported-tokens", label: "Supported Tokens" },
+  { id: "rate-limits", label: "Rate Limits" },
+  { id: "sdk-example", label: "SDK Example" },
+  { id: "contract-addresses", label: "Contract Addresses" },
+];
+
+const TableOfContents = () => {
+  const [activeSection, setActiveSection] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-100px 0px -70% 0px", threshold: 0 }
+    );
+
+    tocItems.forEach(({ id }) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Mobile TOC Toggle */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="lg:hidden fixed bottom-6 right-6 z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
+        aria-label="Table of contents"
+      >
+        <List className="w-5 h-5" />
+      </button>
+
+      {/* Mobile TOC Overlay */}
+      {isOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* TOC Sidebar */}
+      <nav
+        className={cn(
+          "fixed z-50 transition-all duration-300 ease-in-out",
+          "lg:sticky lg:top-24 lg:z-10 lg:h-fit lg:max-h-[calc(100vh-8rem)] lg:w-56 lg:shrink-0",
+          isOpen
+            ? "bottom-20 right-6 left-6 rounded-xl bg-background border border-border shadow-xl p-4"
+            : "hidden lg:block"
+        )}
+      >
+        <div className="lg:glass-card lg:p-4 lg:rounded-xl">
+          <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+            On this page
+          </h3>
+          <ul className="space-y-1">
+            {tocItems.map(({ id, label }) => (
+              <li key={id}>
+                <button
+                  onClick={() => scrollToSection(id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-all",
+                    activeSection === id
+                      ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+    </>
+  );
+};
 const CodeBlock = ({ code, language = "json" }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
 
@@ -209,7 +309,7 @@ const Api = () => {
       <Header />
       
       <main className="pt-24 pb-20 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
@@ -224,38 +324,45 @@ const Api = () => {
             </p>
           </div>
 
-          {/* Base URL */}
-          <div className="glass-card p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-2">Base URL</h2>
-            <div className="bg-secondary/30 rounded-lg p-3 font-mono text-sm break-all">
-              {baseUrl}
-            </div>
-            <p className="text-sm text-muted-foreground mt-3">
-              All API endpoints are served over HTTPS. Authentication is handled via Supabase API keys.
-            </p>
-          </div>
+          {/* Layout with TOC */}
+          <div className="flex gap-8">
+            {/* Sidebar */}
+            <TableOfContents />
 
-          {/* Authentication */}
-          <div className="glass-card p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4">Authentication</h2>
-            <p className="text-muted-foreground mb-4">
-              All requests must include the following headers:
-            </p>
-            <CodeBlock code={`{
+            {/* Main Content */}
+            <div className="flex-1 min-w-0 max-w-4xl">
+              {/* Base URL */}
+              <div id="base-url" className="glass-card p-6 mb-8 scroll-mt-28">
+                <h2 className="text-lg font-semibold mb-2">Base URL</h2>
+                <div className="bg-secondary/30 rounded-lg p-3 font-mono text-sm break-all">
+                  {baseUrl}
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">
+                  All API endpoints are served over HTTPS. Authentication is handled via Supabase API keys.
+                </p>
+              </div>
+
+              {/* Authentication */}
+              <div id="authentication" className="glass-card p-6 mb-8 scroll-mt-28">
+                <h2 className="text-lg font-semibold mb-4">Authentication</h2>
+                <p className="text-muted-foreground mb-4">
+                  All requests must include the following headers:
+                </p>
+                <CodeBlock code={`{
   "apikey": "YOUR_SUPABASE_ANON_KEY",
   "Authorization": "Bearer YOUR_SUPABASE_ANON_KEY",
   "Content-Type": "application/json"
 }`} />
-          </div>
+              </div>
 
-          {/* API Sections */}
-          <div className="space-y-8">
-            {/* Section: Swap */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                Swap API
-              </h2>
+              {/* API Sections */}
+              <div className="space-y-8">
+                {/* Section: Swap */}
+                <div id="swap-api" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    Swap API
+                  </h2>
 
               <div className="space-y-6">
                 <ApiSection
@@ -312,12 +419,12 @@ const Api = () => {
               </div>
             </div>
 
-            {/* Section: Pools */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent" />
-                Pools API
-              </h2>
+                {/* Section: Pools */}
+                <div id="pools-api" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-accent" />
+                    Pools API
+                  </h2>
 
               <div className="space-y-6">
                 <ApiSection
@@ -359,12 +466,12 @@ const Api = () => {
               </div>
             </div>
 
-            {/* Section: Wallet */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                Wallet API
-              </h2>
+                {/* Section: Wallet */}
+                <div id="wallet-api" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                    Wallet API
+                  </h2>
 
               <div className="space-y-6">
                 <ApiSection
@@ -402,12 +509,12 @@ const Api = () => {
               </div>
             </div>
 
-            {/* Supported Tokens */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500" />
-                Supported Tokens
-              </h2>
+                {/* Supported Tokens */}
+                <div id="supported-tokens" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    Supported Tokens
+                  </h2>
 
               <div className="glass-card p-6">
                 <p className="text-muted-foreground mb-4">
@@ -509,12 +616,12 @@ const Api = () => {
               </div>
             </div>
 
-            {/* Rate Limits */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-orange-500" />
-                Rate Limits & Best Practices
-              </h2>
+                {/* Rate Limits */}
+                <div id="rate-limits" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                    Rate Limits & Best Practices
+                  </h2>
 
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Rate Limits Cards */}
@@ -619,12 +726,12 @@ const Api = () => {
               </div>
             </div>
 
-            {/* SDK */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-500" />
-                JavaScript SDK Example
-              </h2>
+                {/* SDK */}
+                <div id="sdk-example" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    JavaScript SDK Example
+                  </h2>
 
               <div className="glass-card p-6">
                 <p className="text-muted-foreground mb-4">
@@ -672,12 +779,12 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
               </div>
             </div>
 
-            {/* Contract Addresses */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-500" />
-                Contract Addresses
-              </h2>
+                {/* Contract Addresses */}
+                <div id="contract-addresses" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                    Contract Addresses
+                  </h2>
 
               <div className="glass-card p-6 overflow-hidden">
                 <p className="text-muted-foreground mb-4">
@@ -715,9 +822,11 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
                 </div>
               </div>
             </div>
-          </div>
+              </div>
 
-          <Footer />
+              <Footer />
+            </div>
+          </div>
         </div>
       </main>
     </div>
