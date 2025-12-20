@@ -55,7 +55,7 @@ const SwapConfirmationModal = ({
   const toUsdValue = toToken.price ? (parseFloat(toValue) * toToken.price).toFixed(2) : "0.00";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center pt-20 md:pt-0 overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center pt-24 overflow-y-auto p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-background/80 backdrop-blur-sm"
