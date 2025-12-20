@@ -39,6 +39,13 @@ const Header = () => {
             >
               Positions
             </NavLink>
+            <NavLink 
+              to="/api" 
+              className="nav-link"
+              activeClassName="nav-link-active"
+            >
+              API
+            </NavLink>
           </nav>
         </div>
         
@@ -82,6 +89,14 @@ const Header = () => {
             onClick={() => setMobileMenuOpen(false)}
           >
             Positions
+          </NavLink>
+          <NavLink 
+            to="/api" 
+            className="nav-link py-2"
+            activeClassName="nav-link-active"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            API
           </NavLink>
         </nav>
       )}

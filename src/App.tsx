@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Pools from "./pages/Pools";
 import Positions from "./pages/Positions";
 import Docs from "./pages/Docs";
+import Api from "./pages/Api";
 import NotFound from "./pages/NotFound";
 
 // Initialize AppKit
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/pools" element={<Pools />} />
             <Route path="/positions" element={<Positions />} />
             <Route path="/docs" element={<Docs />} />
+            <Route path="/api" element={<Api />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
