@@ -270,7 +270,7 @@ export const useAddLiquidity = () => {
     }
   }, [address, getProvider]);
 
-  // Add liquidity helper function
+  // Add liquidity helper function (legacy - uses symbol lookup)
   const addLiquidity = useCallback(async (
     token0Symbol: string,
     token1Symbol: string,
@@ -336,8 +336,69 @@ export const useAddLiquidity = () => {
     });
   }, [isConnected, address, parseAmount, priceToTick, roundTick, approveToken, mintPosition]);
 
+  // Add liquidity with direct addresses (for custom tokens)
+  const addLiquidityWithAddresses = useCallback(async (
+    token0Address: string,
+    token1Address: string,
+    token0Decimals: number,
+    token1Decimals: number,
+    amount0: string,
+    amount1: string,
+    feeTier: number,
+    priceLower: number,
+    priceUpper: number,
+    slippage: number = 0.5
+  ): Promise<string | null> => {
+    if (!isConnected || !address) {
+      toast.error("Please connect your wallet");
+      return null;
+    }
+
+    const amount0Parsed = parseAmount(amount0, token0Decimals);
+    const amount1Parsed = parseAmount(amount1, token1Decimals);
+
+    if (amount0Parsed === BigInt(0) && amount1Parsed === BigInt(0)) {
+      toast.error("Please enter amounts");
+      return null;
+    }
+
+    // Approve tokens
+    if (token0Address !== '0x0000000000000000000000000000000000000000') {
+      const approved = await approveToken(token0Address, amount0Parsed);
+      if (!approved) return null;
+    }
+
+    if (token1Address !== '0x0000000000000000000000000000000000000000') {
+      const approved = await approveToken(token1Address, amount1Parsed);
+      if (!approved) return null;
+    }
+
+    // Calculate ticks from prices
+    const tickSpacing = TICK_SPACING[feeTier] || 60;
+    const tickLower = roundTick(priceToTick(priceLower), tickSpacing, false);
+    const tickUpper = roundTick(priceToTick(priceUpper), tickSpacing, true);
+
+    // Calculate min amounts with slippage
+    const slippageMultiplier = BigInt(Math.floor((100 - slippage) * 100));
+    const amount0Min = (amount0Parsed * slippageMultiplier) / BigInt(10000);
+    const amount1Min = (amount1Parsed * slippageMultiplier) / BigInt(10000);
+
+    return mintPosition({
+      token0Address,
+      token1Address,
+      fee: feeTier,
+      tickLower,
+      tickUpper,
+      amount0Desired: amount0Parsed,
+      amount1Desired: amount1Parsed,
+      amount0Min,
+      amount1Min,
+    });
+  }, [isConnected, address, parseAmount, priceToTick, roundTick, approveToken, mintPosition]);
+
   return {
     addLiquidity,
+    addLiquidityWithAddresses,
     isApproving,
     isMinting,
     isLoading: isApproving || isMinting,
