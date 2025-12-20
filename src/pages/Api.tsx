@@ -1,11 +1,23 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Code, Copy, Check, ExternalLink, List } from "lucide-react";
+import { Code, Copy, Check, ExternalLink, List, Key, Send, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Highlight, themes } from "prism-react-renderer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const apiKeyRequestSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().trim().email("Invalid email address").max(255),
+  company: z.string().trim().max(100).optional(),
+  use_case: z.string().trim().min(20, "Please describe your use case in at least 20 characters").max(1000),
+});
 
 const tocItems = [
   { id: "base-url", label: "Base URL" },
@@ -17,6 +29,7 @@ const tocItems = [
   { id: "rate-limits", label: "Rate Limits" },
   { id: "sdk-example", label: "SDK Example" },
   { id: "contract-addresses", label: "Contract Addresses" },
+  { id: "request-api-key", label: "Request API Key" },
 ];
 
 const TableOfContents = () => {
@@ -106,6 +119,166 @@ const TableOfContents = () => {
     </>
   );
 };
+
+const ApiKeyRequestForm = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    company: "",
+    use_case: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    // Validate form data
+    const result = apiKeyRequestSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("api_key_requests").insert({
+        name: result.data.name,
+        email: result.data.email,
+        company: result.data.company || null,
+        use_case: result.data.use_case,
+      });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast.success("Request submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      toast.error("Failed to submit request. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isSubmitted) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+          <Check className="w-8 h-8 text-green-500" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Request Submitted!</h3>
+        <p className="text-muted-foreground">
+          Thank you for your interest. We'll review your request and get back to you within 24-48 hours.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass-card p-6">
+      <div className="flex items-start gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+          <Key className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="font-semibold mb-1">Get Your API Key</h3>
+          <p className="text-sm text-muted-foreground">
+            Fill out the form below to request access to our API. We'll review your application and send you an API key via email.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name *</Label>
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="John Doe"
+              className={errors.name ? "border-red-500" : ""}
+            />
+            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="john@example.com"
+              className={errors.email ? "border-red-500" : ""}
+            />
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="company">Company (Optional)</Label>
+          <Input
+            id="company"
+            name="company"
+            value={formData.company}
+            onChange={handleChange}
+            placeholder="Your company name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="use_case">How will you use the API? *</Label>
+          <Textarea
+            id="use_case"
+            name="use_case"
+            value={formData.use_case}
+            onChange={handleChange}
+            placeholder="Describe your project and how you plan to integrate with our API..."
+            rows={4}
+            className={errors.use_case ? "border-red-500" : ""}
+          />
+          {errors.use_case && <p className="text-xs text-red-500">{errors.use_case}</p>}
+        </div>
+
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-2" />
+              Submit Request
+            </>
+          )}
+        </Button>
+      </form>
+    </div>
+  );
+};
+
 const CodeBlock = ({ code, language = "json" }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
 
@@ -822,6 +995,16 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
                 </div>
               </div>
             </div>
+
+                {/* Request API Key Form */}
+                <div id="request-api-key" className="scroll-mt-28">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    Request API Key
+                  </h2>
+
+                  <ApiKeyRequestForm />
+                </div>
               </div>
 
               <Footer />
