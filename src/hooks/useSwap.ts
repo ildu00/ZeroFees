@@ -81,6 +81,10 @@ export const BASE_TOKENS: Record<string, { symbol: string; name: string; address
 // Uniswap V3 SwapRouter02 on Base
 const SWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
 
+// ReGraph fee configuration
+const REGRAPH_FEE_PERCENT = 0.3; // 0.3% fee
+const REGRAPH_FEE_WALLET = '0x742d35Cc6634C0532925a3b844Bc9e7595f00000'; // TODO: Replace with actual ReGraph wallet
+
 // ERC20 ABI selectors
 const ERC20_ABI = {
   approve: '0x095ea7b3',
@@ -411,6 +415,74 @@ export const useSwap = () => {
     }
   }, [address, getProvider, requestWithTimeout, beginWalletAction, endWalletAction]);
 
+  // Send ReGraph fee (ETH or ERC20)
+  const sendReGraphFee = useCallback(async (
+    tokenAddress: string,
+    feeAmount: string,
+    decimals: number
+  ): Promise<boolean> => {
+    const provider = getProvider();
+    if (!provider || !address) return false;
+
+    try {
+      if (tokenAddress === BASE_TOKENS.ETH.address) {
+        // Send ETH fee
+        const value = '0x' + BigInt(feeAmount).toString(16);
+        
+        const txHash = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to: REGRAPH_FEE_WALLET,
+            value,
+          }],
+        }) as string;
+
+        // Wait for confirmation
+        for (let i = 0; i < 15; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const receipt = await provider.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash],
+          });
+          if (receipt) return true;
+        }
+        return true; // Assume success if tx was sent
+      } else {
+        // Send ERC20 fee via transfer
+        const recipient = REGRAPH_FEE_WALLET.toLowerCase().replace('0x', '').padStart(64, '0');
+        const amount = BigInt(feeAmount).toString(16).padStart(64, '0');
+        const transferData = `0xa9059cbb${recipient}${amount}`; // transfer(address,uint256)
+
+        const txHash = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to: tokenAddress,
+            data: transferData,
+          }],
+        }) as string;
+
+        // Wait for confirmation
+        for (let i = 0; i < 15; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const receipt = await provider.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash],
+          });
+          if (receipt) return true;
+        }
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Fee transfer error:', error);
+      if (error.code === 4001) {
+        toast.error('Fee transfer rejected');
+      }
+      return false;
+    }
+  }, [address, getProvider]);
+
   // Execute swap
   const executeSwap = useCallback(async (
     tokenIn: { symbol: string; address: string; decimals: number },
@@ -436,7 +508,24 @@ export const useSwap = () => {
         }
       }
 
-      const amountInWei = (parseFloat(amountIn) * Math.pow(10, tokenIn.decimals)).toFixed(0);
+      // Calculate ReGraph fee (0.3%)
+      const totalAmountWei = BigInt(Math.floor(parseFloat(amountIn) * Math.pow(10, tokenIn.decimals)));
+      const feeAmountWei = (totalAmountWei * BigInt(3)) / BigInt(1000); // 0.3%
+      const swapAmountWei = totalAmountWei - feeAmountWei;
+
+      // Send ReGraph fee first
+      toast.info('Sending ReGraph fee (0.3%)...', { id: 'regraph-fee' });
+      const feeSent = await sendReGraphFee(tokenIn.address, feeAmountWei.toString(), tokenIn.decimals);
+      toast.dismiss('regraph-fee');
+      
+      if (!feeSent) {
+        toast.error('Fee transfer failed');
+        return null;
+      }
+
+      toast.success('ReGraph fee sent!');
+
+      const amountInWei = swapAmountWei.toString();
       const minOut = (BigInt(quote.amountOut) * BigInt(100 - Math.floor(slippage * 10)) / BigInt(1000)).toString();
       const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
 
@@ -545,10 +634,11 @@ export const useSwap = () => {
         },
       });
 
-      return txHash as string;
+    return txHash as string;
     } catch (error: any) {
       // Always dismiss the pending toast on error/rejection
       toast.dismiss('mobile-wallet-pending');
+      toast.dismiss('regraph-fee');
 
       if (error?.message === 'WALLET_TIMEOUT') {
         toast.error('Wallet did not respond in time', {
@@ -568,7 +658,7 @@ export const useSwap = () => {
       endWalletAction();
       setIsSwapping(false);
     }
-  }, [address, quote, switchToBase, approveToken, getProvider, requestWithTimeout, beginWalletAction, endWalletAction]);
+  }, [address, quote, switchToBase, approveToken, getProvider, requestWithTimeout, beginWalletAction, endWalletAction, sendReGraphFee]);
 
   // Fetch prices on mount
   useEffect(() => {

@@ -14,6 +14,7 @@ interface SwapConfirmationModalProps {
   toValue: string;
   slippage: number;
   fee: string;
+  regraphFee?: string;
   exchangeRate: string;
   minReceived: string;
 }
@@ -29,6 +30,7 @@ const SwapConfirmationModal = ({
   toValue,
   slippage,
   fee,
+  regraphFee,
   exchangeRate,
   minReceived,
 }: SwapConfirmationModalProps) => {
@@ -141,9 +143,18 @@ const SwapConfirmationModal = ({
               </span>
             </div>
 
+            {regraphFee && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <span>ReGraph Fee (0.3%)</span>
+                </div>
+                <span className="font-medium text-primary">~${regraphFee}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-1 text-muted-foreground">
-                <span>Network Fee</span>
+                <span>Total Fees</span>
               </div>
               <span className="font-medium">~${fee}</span>
             </div>
