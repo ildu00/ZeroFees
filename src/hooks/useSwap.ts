@@ -150,7 +150,7 @@ export const useSwap = () => {
     }
   }, [address, getProvider]);
 
-  // Fetch quote
+  // Fetch quote - don't clear existing quote during loading to avoid flicker
   const fetchQuote = useCallback(async (
     tokenIn: string,
     tokenOut: string,
@@ -179,7 +179,7 @@ export const useSwap = () => {
       return data;
     } catch (error) {
       console.error('Error fetching quote:', error);
-      setQuote(null);
+      // Don't clear quote on error - keep showing the estimate
       return null;
     } finally {
       setIsLoadingQuote(false);
