@@ -9,12 +9,23 @@ const projectId = '4a8f1f90250caf4cf14abd6c1d0fe873';
 // Define networks
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, mainnet];
 
-// Metadata for the app
+// Metadata for the app - IMPORTANT: url must match the actual origin for mobile deep linking
+const getAppUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://zerofees.online';
+};
+
 const metadata = {
   name: 'ZeroFees',
   description: 'Zero-fee decentralized exchange on Base',
-  url: typeof window !== 'undefined' ? window.location.origin : 'https://zerofees.online',
-  icons: ['https://zerofees.online/favicon.ico']
+  url: getAppUrl(),
+  icons: [getAppUrl() + '/favicon.ico'],
+  redirect: {
+    native: undefined, // We don't have a native app
+    universal: getAppUrl(), // Universal link for returning from mobile wallets
+  }
 };
 
 // Create ethers adapter
@@ -38,6 +49,10 @@ export const appkit = createAppKit({
     '--w3m-border-radius-master': '2px'
   },
   enableWalletGuide: false,
+  // Enable injected wallets (MetaMask browser extension)
+  enableInjected: true,
+  // Enable EIP-6963 for better wallet detection
+  enableEIP6963: true,
 });
 
 // Hide branding elements in AppKit modal (Shadow DOM)
