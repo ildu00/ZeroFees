@@ -126,6 +126,55 @@ export const useAppKitWallet = () => {
 
     return;
   }, [isConnected, address, status, walletProvider, fetchBalance, syncChain]);
+
+  // iOS WalletConnect: when returning from MetaMask, Safari can miss the final "connected" update.
+  // On focus/visibility restore, re-sync from AppKit state and close the modal if needed.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    let disposed = false;
+
+    const resync = () => {
+      if (document.visibilityState && document.visibilityState !== 'visible') return;
+
+      import('@/config/appkit')
+        .then(({ appkit }) => {
+          if (disposed) return;
+
+          const acc: any = appkit.getAccount?.('eip155') ?? appkit.getAccount?.();
+          const connected = Boolean(acc?.isConnected);
+          const addr = typeof acc?.address === 'string' ? acc.address : undefined;
+
+          if (connected) {
+            setState(prev => ({
+              ...prev,
+              isConnecting: false,
+              isConnected: true,
+              address: addr ?? prev.address,
+            }));
+
+            setTimeout(() => {
+              appkit.close().catch(() => {
+                // ignore
+              });
+            }, 0);
+          }
+        })
+        .catch(() => {
+          // ignore
+        });
+    };
+
+    window.addEventListener('focus', resync);
+    document.addEventListener('visibilitychange', resync);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', resync);
+      document.removeEventListener('visibilitychange', resync);
+    };
+  }, []);
+
   // Listen for chain changes
   useEffect(() => {
     if (!walletProvider) return;
@@ -168,7 +217,27 @@ export const useAppKitWallet = () => {
         const evt = event?.data?.event;
         if (evt) console.log('[WC]', evt, event?.data);
 
-        // Always stop the local "connecting" spinner once the modal closes
+        // Stop local spinner on success/cancel/error/close
+        if (evt === 'CONNECT_SUCCESS') {
+          setState(prev => ({ ...prev, isConnecting: false, error: null }));
+
+          // Avoid doing async work inside the event callback
+          setTimeout(() => {
+            appkit.close().catch(() => {
+              // ignore
+            });
+          }, 0);
+
+          unsubscribe();
+          return;
+        }
+
+        if (evt === 'CONNECT_CANCEL' || evt === 'CONNECT_ERROR') {
+          setState(prev => ({ ...prev, isConnecting: false }));
+          unsubscribe();
+          return;
+        }
+
         if (evt === 'MODAL_CLOSE') {
           setState(prev => ({ ...prev, isConnecting: false }));
           unsubscribe();
