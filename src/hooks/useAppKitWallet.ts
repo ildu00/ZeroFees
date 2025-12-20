@@ -217,21 +217,7 @@ export const useAppKitWallet = () => {
         const evt = event?.data?.event;
         if (evt) console.log('[WC]', evt, event?.data);
 
-        // Stop local spinner on success/cancel/error/close
-        if (evt === 'CONNECT_SUCCESS') {
-          setState(prev => ({ ...prev, isConnecting: false, error: null }));
-
-          // Avoid doing async work inside the event callback
-          setTimeout(() => {
-            appkit.close().catch(() => {
-              // ignore
-            });
-          }, 0);
-
-          unsubscribe();
-          return;
-        }
-
+        // Stop local spinner on cancel/error/close (don't close on CONNECT_SUCCESS - it's too early)
         if (evt === 'CONNECT_CANCEL' || evt === 'CONNECT_ERROR') {
           setState(prev => ({ ...prev, isConnecting: false }));
           unsubscribe();
