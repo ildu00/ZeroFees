@@ -20,7 +20,10 @@ const getMetadataUrl = () => {
 
   const { hostname, origin } = window.location;
   const isPreviewHost =
-    hostname.endsWith('lovableproject.com') || hostname === 'localhost' || hostname === '127.0.0.1';
+    hostname.endsWith('lovableproject.com') ||
+    hostname.endsWith('lovable.app') ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1';
 
   return isPreviewHost ? FALLBACK_PUBLIC_URL : origin;
 };
@@ -63,6 +66,13 @@ export const appkit = createAppKit({
 // Hide branding elements in AppKit modal (Shadow DOM)
 // Keep this conservative to avoid accidentally hiding the wallet list UI.
 if (typeof window !== 'undefined') {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // NOTE: On iOS (Safari / MetaMask in-app browser), aggressive Shadow DOM scanning
+  // can cause blank/white sheets or stalled WalletConnect flows. Skip it there.
+  if (isIOS) {
+    // no-op
+  } else {
   const normalize = (t: string) =>
     t.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -229,6 +239,7 @@ if (typeof window !== 'undefined') {
   appkit.subscribeEvents((event: any) => {
     if (event.data?.event === 'MODAL_OPEN') runFor(15000);
   });
+  }
 }
 
 export { networks, projectId };
