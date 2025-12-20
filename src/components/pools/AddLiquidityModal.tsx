@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Plus, AlertCircle, Loader2, Settings, ChevronDown } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Plus, AlertCircle, Loader2, Settings, ChevronDown, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -28,6 +28,9 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   const [priceUpper, setPriceUpper] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [slippage, setSlippage] = useState("0.5");
+  const [priceRangePercent, setPriceRangePercent] = useState(30); // ±30% by default
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
 
   // Token selection state
   const [tokens, setTokens] = useState<Token[]>(allTokens);
@@ -77,13 +80,88 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     }
   }, [pool, tokens, open]);
 
-  // Set default price range
-  useEffect(() => {
-    if (open && !priceLower && !priceUpper) {
+  // Fetch current price and calculate price range
+  const fetchPriceAndSetRange = useCallback(async () => {
+    if (!token0 || !token1) return;
+    
+    setIsFetchingPrice(true);
+    try {
+      // Map token symbols to CoinGecko IDs
+      const geckoIds: Record<string, string> = {
+        'WETH': 'ethereum',
+        'ETH': 'ethereum',
+        'USDC': 'usd-coin',
+        'USDbC': 'usd-coin',
+        'USDT': 'tether',
+        'DAI': 'dai',
+        'WBTC': 'wrapped-bitcoin',
+        'cbETH': 'coinbase-wrapped-staked-eth',
+        'rETH': 'rocket-pool-eth',
+      };
+      
+      const id0 = geckoIds[token0.symbol];
+      const id1 = geckoIds[token1.symbol];
+      
+      if (!id0 || !id1) {
+        // If tokens not in mapping, use default range
+        console.log("Tokens not in price mapping, using default range");
+        setPriceLower("0.5");
+        setPriceUpper("2.0");
+        setCurrentPrice(null);
+        return;
+      }
+      
+      // Fetch prices from CoinGecko
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${id0},${id1}&vs_currency=usd`
+      );
+      
+      if (!response.ok) throw new Error("Failed to fetch prices");
+      
+      const data = await response.json();
+      const price0 = data[id0]?.usd;
+      const price1 = data[id1]?.usd;
+      
+      if (price0 && price1) {
+        // Calculate price of token0 in terms of token1
+        const price = price0 / price1;
+        setCurrentPrice(price);
+        
+        // Calculate range based on percentage
+        const rangeMultiplier = priceRangePercent / 100;
+        const lower = price * (1 - rangeMultiplier);
+        const upper = price * (1 + rangeMultiplier);
+        
+        setPriceLower(lower.toFixed(6));
+        setPriceUpper(upper.toFixed(6));
+      }
+    } catch (error) {
+      console.error("Error fetching price:", error);
+      // Fallback to default range
       setPriceLower("0.5");
       setPriceUpper("2.0");
+    } finally {
+      setIsFetchingPrice(false);
     }
-  }, [open]);
+  }, [token0, token1, priceRangePercent]);
+
+  // Auto-fetch price when tokens change
+  useEffect(() => {
+    if (open && token0 && token1) {
+      fetchPriceAndSetRange();
+    }
+  }, [open, token0, token1, fetchPriceAndSetRange]);
+
+  // Update price range when percentage changes
+  useEffect(() => {
+    if (currentPrice !== null) {
+      const rangeMultiplier = priceRangePercent / 100;
+      const lower = currentPrice * (1 - rangeMultiplier);
+      const upper = currentPrice * (1 + rangeMultiplier);
+      setPriceLower(lower.toFixed(6));
+      setPriceUpper(upper.toFixed(6));
+    }
+  }, [priceRangePercent, currentPrice]);
 
   // Handle token import
   const handleImportToken = (newToken: Token) => {
@@ -280,9 +358,45 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
 
           {/* Price Range */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">
-              Price Range ({token0?.symbol || "Token0"} per {token1?.symbol || "Token1"})
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-muted-foreground">
+                Price Range ({token0?.symbol || "Token0"} per {token1?.symbol || "Token1"})
+              </label>
+              <button
+                onClick={fetchPriceAndSetRange}
+                disabled={isLoading || isFetchingPrice}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isFetchingPrice ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+            
+            {/* Range Percentage Selector */}
+            <div className="flex gap-2 mb-3">
+              {[10, 20, 30, 50].map(percent => (
+                <button
+                  key={percent}
+                  onClick={() => setPriceRangePercent(percent)}
+                  disabled={isLoading}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    priceRangePercent === percent
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary/50 hover:bg-secondary text-muted-foreground'
+                  } disabled:opacity-50`}
+                >
+                  ±{percent}%
+                </button>
+              ))}
+            </div>
+            
+            {/* Current Price Display */}
+            {currentPrice !== null && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Current: 1 {token0?.symbol} = {currentPrice.toFixed(4)} {token1?.symbol}
+              </p>
+            )}
+            
             <div className="grid grid-cols-2 gap-3">
               <div className="glass-input p-3">
                 <span className="text-xs text-muted-foreground">Min Price</span>
