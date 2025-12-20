@@ -24,6 +24,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   
   const [amount0, setAmount0] = useState("");
   const [amount1, setAmount1] = useState("");
+  const [lastEditedAmount, setLastEditedAmount] = useState<"amount0" | "amount1" | null>(null);
   const [feeTier, setFeeTier] = useState(3000);
   const [priceLower, setPriceLower] = useState("");
   const [priceUpper, setPriceUpper] = useState("");
@@ -32,6 +33,59 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   const [priceRangePercent, setPriceRangePercent] = useState(30); // ±30% by default
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  // Calculate the other amount based on current price and the entered amount
+  const calculateLinkedAmount = useCallback((enteredAmount: string, isAmount0: boolean): string => {
+    if (!currentPrice || !enteredAmount || parseFloat(enteredAmount) === 0) {
+      return "";
+    }
+    
+    const amount = parseFloat(enteredAmount);
+    if (isNaN(amount)) return "";
+    
+    // If entering amount0 (e.g., WETH), calculate amount1 (e.g., USDC) = amount0 * price
+    // If entering amount1 (e.g., USDC), calculate amount0 (e.g., WETH) = amount1 / price
+    if (isAmount0) {
+      const result = amount * currentPrice;
+      return result.toFixed(6);
+    } else {
+      const result = amount / currentPrice;
+      return result.toFixed(6);
+    }
+  }, [currentPrice]);
+
+  // Handle amount0 change and calculate amount1
+  const handleAmount0Change = (value: string) => {
+    setAmount0(value);
+    setLastEditedAmount("amount0");
+    const calculatedAmount1 = calculateLinkedAmount(value, true);
+    if (calculatedAmount1) {
+      setAmount1(calculatedAmount1);
+    }
+  };
+
+  // Handle amount1 change and calculate amount0
+  const handleAmount1Change = (value: string) => {
+    setAmount1(value);
+    setLastEditedAmount("amount1");
+    const calculatedAmount0 = calculateLinkedAmount(value, false);
+    if (calculatedAmount0) {
+      setAmount0(calculatedAmount0);
+    }
+  };
+
+  // Recalculate amounts when price changes
+  useEffect(() => {
+    if (currentPrice !== null && lastEditedAmount) {
+      if (lastEditedAmount === "amount0" && amount0) {
+        const calculated = calculateLinkedAmount(amount0, true);
+        if (calculated) setAmount1(calculated);
+      } else if (lastEditedAmount === "amount1" && amount1) {
+        const calculated = calculateLinkedAmount(amount1, false);
+        if (calculated) setAmount0(calculated);
+      }
+    }
+  }, [currentPrice, lastEditedAmount, amount0, amount1, calculateLinkedAmount]);
 
   // Token selection state
   const [tokens, setTokens] = useState<Token[]>(allTokens);
@@ -412,7 +466,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 type="number"
                 inputMode="decimal"
                 value={amount0}
-                onChange={(e) => setAmount0(e.target.value)}
+                onChange={(e) => handleAmount0Change(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
                 className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
@@ -443,7 +497,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 type="number"
                 inputMode="decimal"
                 value={amount1}
-                onChange={(e) => setAmount1(e.target.value)}
+                onChange={(e) => handleAmount1Change(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
                 className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
