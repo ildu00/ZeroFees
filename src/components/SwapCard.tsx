@@ -146,19 +146,35 @@ const SwapCard = () => {
   }, [fromValue, fromToken.symbol, toToken.symbol, fetchQuote, quoteKey, isInAppBrowser]);
 
   // Auto-refresh quote every 15 seconds when there's a valid amount
+  const [refreshCountdown, setRefreshCountdown] = useState(15);
+  
   useEffect(() => {
-    if (!fromValue || parseFloat(fromValue) === 0) return;
+    if (!fromValue || parseFloat(fromValue) === 0) {
+      setRefreshCountdown(15);
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setQuoteKey(prev => prev + 1);
-    }, 15000);
+    // Reset countdown when quote refreshes
+    setRefreshCountdown(15);
 
-    return () => clearInterval(interval);
-  }, [fromValue]);
+    // Countdown interval (every second)
+    const countdownInterval = setInterval(() => {
+      setRefreshCountdown(prev => {
+        if (prev <= 1) {
+          setQuoteKey(k => k + 1);
+          return 15;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [fromValue, fromToken.symbol, toToken.symbol]);
 
   // Force refetch quote (for manual refresh)
   const refreshQuote = useCallback(() => {
     setQuoteKey(prev => prev + 1);
+    setRefreshCountdown(15);
   }, []);
 
   const handleSwapTokens = () => {
@@ -333,7 +349,17 @@ const SwapCard = () => {
           {quote?.route && (
             <div className="flex items-center justify-between text-xs text-muted-foreground/70 mt-1">
               <span>Route: {quote.route}</span>
-              <span>Slippage: {slippage}%</span>
+              <div className="flex items-center gap-2">
+                <span>Slippage: {slippage}%</span>
+                {fromValue && parseFloat(fromValue) > 0 && (
+                  <span className="text-primary/70">↻ {refreshCountdown}s</span>
+                )}
+              </div>
+            </div>
+          )}
+          {!quote?.route && fromValue && parseFloat(fromValue) > 0 && (
+            <div className="flex items-center justify-end text-xs text-muted-foreground/70 mt-1">
+              <span className="text-primary/70">↻ {refreshCountdown}s</span>
             </div>
           )}
         </div>
