@@ -362,23 +362,96 @@ const Api = () => {
                   The following tokens are supported for swaps on Base network:
                 </p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
                   {[
-                    "ETH", "WETH", "USDC", "USDT", "DAI", "USDbC", "EURC", "crvUSD",
-                    "cbETH", "wstETH", "rETH", "ezETH", "weETH",
-                    "AERO", "WELL", "MORPHO", "SEAM", "EXTRA", "BSWAP", "ALB",
-                    "BRETT", "DEGEN", "TOSHI", "HIGHER", "NORMIE", "MOCHI", "KEYCAT",
-                    "TYBG", "DOGINME", "BENJI", "MFER", "BASED", "BALD", "DINO",
-                    "CHOMP", "SKI", "WEIRDO", "VIRTUAL", "FRIEND",
-                    "SNX", "COMP", "YFI", "UNI", "LINK", "CRV", "BAL", "LDO", "PENDLE"
+                    { symbol: "ETH", icon: "⟠", category: "native" },
+                    { symbol: "WETH", icon: "⟠", category: "native" },
+                    { symbol: "USDC", icon: "💲", category: "stable" },
+                    { symbol: "USDT", icon: "💵", category: "stable" },
+                    { symbol: "DAI", icon: "◈", category: "stable" },
+                    { symbol: "USDbC", icon: "💲", category: "stable" },
+                    { symbol: "EURC", icon: "💶", category: "stable" },
+                    { symbol: "crvUSD", icon: "📈", category: "stable" },
+                    { symbol: "cbETH", icon: "🔵", category: "lst" },
+                    { symbol: "wstETH", icon: "🔷", category: "lst" },
+                    { symbol: "rETH", icon: "🚀", category: "lst" },
+                    { symbol: "ezETH", icon: "🔶", category: "lst" },
+                    { symbol: "weETH", icon: "🟢", category: "lst" },
+                    { symbol: "AERO", icon: "✈️", category: "defi" },
+                    { symbol: "WELL", icon: "🌙", category: "defi" },
+                    { symbol: "MORPHO", icon: "🦋", category: "defi" },
+                    { symbol: "SEAM", icon: "🧵", category: "defi" },
+                    { symbol: "EXTRA", icon: "➕", category: "defi" },
+                    { symbol: "BSWAP", icon: "🔄", category: "defi" },
+                    { symbol: "ALB", icon: "👽", category: "defi" },
+                    { symbol: "BRETT", icon: "🐸", category: "meme" },
+                    { symbol: "DEGEN", icon: "🎩", category: "meme" },
+                    { symbol: "TOSHI", icon: "🐱", category: "meme" },
+                    { symbol: "HIGHER", icon: "⬆️", category: "meme" },
+                    { symbol: "NORMIE", icon: "😐", category: "meme" },
+                    { symbol: "MOCHI", icon: "🍡", category: "meme" },
+                    { symbol: "KEYCAT", icon: "🐈", category: "meme" },
+                    { symbol: "TYBG", icon: "🙏", category: "meme" },
+                    { symbol: "DOGINME", icon: "🐕", category: "meme" },
+                    { symbol: "BENJI", icon: "🐶", category: "meme" },
+                    { symbol: "MFER", icon: "😎", category: "meme" },
+                    { symbol: "BASED", icon: "🔵", category: "meme" },
+                    { symbol: "BALD", icon: "👨‍🦲", category: "meme" },
+                    { symbol: "DINO", icon: "🦖", category: "meme" },
+                    { symbol: "CHOMP", icon: "🦈", category: "meme" },
+                    { symbol: "SKI", icon: "🎿", category: "meme" },
+                    { symbol: "WEIRDO", icon: "🤪", category: "meme" },
+                    { symbol: "VIRTUAL", icon: "🎮", category: "gaming" },
+                    { symbol: "FRIEND", icon: "🤝", category: "gaming" },
+                    { symbol: "SNX", icon: "⚡", category: "defi" },
+                    { symbol: "COMP", icon: "🏦", category: "defi" },
+                    { symbol: "YFI", icon: "🔵", category: "defi" },
+                    { symbol: "UNI", icon: "🦄", category: "defi" },
+                    { symbol: "LINK", icon: "🔗", category: "defi" },
+                    { symbol: "CRV", icon: "📉", category: "defi" },
+                    { symbol: "BAL", icon: "⚖️", category: "defi" },
+                    { symbol: "LDO", icon: "🌊", category: "defi" },
+                    { symbol: "PENDLE", icon: "🔮", category: "defi" },
                   ].map((token) => (
-                    <div key={token} className="bg-secondary/30 rounded px-3 py-1.5 text-sm font-mono text-center">
-                      {token}
+                    <div 
+                      key={token.symbol} 
+                      className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all hover:scale-105 cursor-default ${
+                        token.category === "native" ? "bg-primary/10 border-primary/30" :
+                        token.category === "stable" ? "bg-green-500/10 border-green-500/30" :
+                        token.category === "lst" ? "bg-blue-500/10 border-blue-500/30" :
+                        token.category === "defi" ? "bg-purple-500/10 border-purple-500/30" :
+                        token.category === "meme" ? "bg-orange-500/10 border-orange-500/30" :
+                        "bg-cyan-500/10 border-cyan-500/30"
+                      }`}
+                    >
+                      <span className="text-lg">{token.icon}</span>
+                      <span className="text-sm font-mono font-medium">{token.symbol}</span>
                     </div>
                   ))}
                 </div>
 
-                <p className="text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-border/30">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-primary/30" /> Native
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-green-500/30" /> Stablecoins
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-blue-500/30" /> LST/LRT
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-purple-500/30" /> DeFi
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-orange-500/30" /> Memecoins
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-3 h-3 rounded bg-cyan-500/30" /> Gaming
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground mt-4">
                   Custom tokens can be imported by contract address using the frontend interface.
                 </p>
               </div>
