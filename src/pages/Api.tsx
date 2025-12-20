@@ -601,10 +601,10 @@ const Api = () => {
 
               <div className="space-y-6">
                 <ApiSection
-                  title="Get Uniswap V3 Pools"
+                  title="Get Liquidity Pools"
                   method="POST"
                   endpoint={`${baseUrl}/get-uniswap-pools`}
-                  description="Fetches top liquidity pools from Uniswap V3 on Base network, including TVL, volume, and fee tier information."
+                  description="Fetches top liquidity pools on Base network, including TVL, volume, and fee tier information."
                   requestBody={`{
   "limit": 20,
   "orderBy": "totalValueLockedUSD"
@@ -966,8 +966,8 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
 
                 <div className="space-y-3">
                   {[
-                    { name: "Uniswap V3 SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
-                    { name: "Uniswap V3 Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
+                    { name: "SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
+                    { name: "Pool Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
                     { name: "WETH", address: "0x4200000000000000000000000000000000000006" },
                     { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
                   ].map((contract, i, arr) => (

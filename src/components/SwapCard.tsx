@@ -269,17 +269,17 @@ const SwapCard = () => {
     : "...";
 
   // Calculate fees display
-  const uniswapFeePercent = quote?.fee ? (quote.fee / 10000).toFixed(2) : "0.30";
+  const networkFeePercent = quote?.fee ? (quote.fee / 10000).toFixed(2) : "0.30";
   const regraphFeePercent = "0.30";
-  const totalFeePercent = (parseFloat(uniswapFeePercent) + parseFloat(regraphFeePercent)).toFixed(2);
+  const totalFeePercent = (parseFloat(networkFeePercent) + parseFloat(regraphFeePercent)).toFixed(2);
   
   const regraphFeeUsd = fromValue && fromToken.price 
     ? (parseFloat(fromValue) * fromToken.price * 0.003).toFixed(2)
     : "0.00";
-  const uniswapFeeUsd = fromValue && fromToken.price 
-    ? (parseFloat(fromValue) * fromToken.price * parseFloat(uniswapFeePercent) / 100).toFixed(2)
+  const networkFeeUsd = fromValue && fromToken.price 
+    ? (parseFloat(fromValue) * fromToken.price * parseFloat(networkFeePercent) / 100).toFixed(2)
     : "0.00";
-  const totalFeeUsd = (parseFloat(regraphFeeUsd) + parseFloat(uniswapFeeUsd)).toFixed(2);
+  const totalFeeUsd = (parseFloat(regraphFeeUsd) + parseFloat(networkFeeUsd)).toFixed(2);
 
   return (
     <>
@@ -360,8 +360,8 @@ const SwapCard = () => {
               <span className="text-primary">${regraphFeeUsd} ({regraphFeePercent}%)</span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Network fee (Uniswap)</span>
-              <span>${uniswapFeeUsd} ({uniswapFeePercent}%)</span>
+              <span>Network fee</span>
+              <span>${networkFeeUsd} ({networkFeePercent}%)</span>
             </div>
             <div className="flex items-center justify-between text-xs font-medium">
               <span>Total fees</span>
