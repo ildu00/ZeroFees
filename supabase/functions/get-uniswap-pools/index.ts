@@ -127,14 +127,17 @@ async function fetchFromGeckoTerminal(): Promise<Pool[]> {
     .map((pool: any, index: number) => {
       const attrs = pool.attributes || {};
       const name = attrs.name || '???/???';
-      const [token0Symbol, token1Symbol] = name.split(' / ').map((s: string) => s.trim());
+      
+      // Extract fee tier from pool name (e.g., "WETH / USDC 0.05%")
+      const feeTierMatch = name.match(/(\d+\.?\d*)%/);
+      const feeTier = feeTierMatch ? parseFloat(feeTierMatch[1]) : 0.3;
+      
+      // Remove fee tier from name before parsing tokens
+      const cleanName = name.replace(/\s*\d+\.?\d*%\s*/, '');
+      const [token0Symbol, token1Symbol] = cleanName.split(' / ').map((s: string) => s.trim());
       
       const tvl = parseFloat(attrs.reserve_in_usd || '0');
       const volume24h = parseFloat(attrs.volume_usd?.h24 || '0');
-      
-      // Extract fee tier from pool name or default to 0.3%
-      const feeTierMatch = name.match(/(\d+\.\d+)%/);
-      const feeTier = feeTierMatch ? parseFloat(feeTierMatch[1]) : 0.3;
       
       const fees24h = volume24h * (feeTier / 100);
       const apr = tvl > 0 ? ((fees24h * 365) / tvl) * 100 : 0;
