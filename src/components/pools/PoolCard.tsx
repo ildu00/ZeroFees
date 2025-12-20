@@ -32,8 +32,8 @@ const PoolCard = ({ pool, onAddLiquidity }: PoolCardProps) => {
               className="w-10 h-10 rounded-full border-2 border-card bg-card"
             />
           </div>
-          <div>
-            <h3 className="font-semibold">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold truncate max-w-[140px]" title={`${pool.token0.symbol}/${pool.token1.symbol}`}>
               {pool.token0.symbol}/{pool.token1.symbol}
             </h3>
             <p className="text-xs text-muted-foreground">{pool.feeTier ? `${pool.feeTier}%` : '0.3%'} fee tier</p>
