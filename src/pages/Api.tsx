@@ -391,58 +391,105 @@ const Api = () => {
                 Rate Limits & Best Practices
               </h2>
 
-              <div className="glass-card p-6 space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Rate Limits</h3>
-                  <ul className="text-muted-foreground space-y-1 text-sm">
-                    <li>• Price API: 100 requests per minute</li>
-                    <li>• Quote API: 60 requests per minute</li>
-                    <li>• Pools API: 30 requests per minute</li>
-                    <li>• Transactions API: 20 requests per minute</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Best Practices</h3>
-                  <ul className="text-muted-foreground space-y-1 text-sm">
-                    <li>• Cache price responses for at least 30 seconds</li>
-                    <li>• Use WebSocket for real-time price updates when available</li>
-                    <li>• Always validate token addresses before executing swaps</li>
-                    <li>• Implement proper error handling for failed requests</li>
-                    <li>• Use appropriate slippage tolerance (0.5% - 1% for stable pairs, 1% - 5% for volatile pairs)</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Error Codes</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border/30">
-                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Code</th>
-                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-border/20">
-                          <td className="py-2 px-3 font-mono">400</td>
-                          <td className="py-2 px-3 text-muted-foreground">Invalid request parameters</td>
-                        </tr>
-                        <tr className="border-b border-border/20">
-                          <td className="py-2 px-3 font-mono">401</td>
-                          <td className="py-2 px-3 text-muted-foreground">Missing or invalid API key</td>
-                        </tr>
-                        <tr className="border-b border-border/20">
-                          <td className="py-2 px-3 font-mono">429</td>
-                          <td className="py-2 px-3 text-muted-foreground">Rate limit exceeded</td>
-                        </tr>
-                        <tr className="border-b border-border/20">
-                          <td className="py-2 px-3 font-mono">500</td>
-                          <td className="py-2 px-3 text-muted-foreground">Internal server error</td>
-                        </tr>
-                      </tbody>
-                    </table>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Rate Limits Cards */}
+                <div className="glass-card p-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                      <span className="text-orange-400 text-sm">⚡</span>
+                    </span>
+                    Rate Limits
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { endpoint: "Price API", limit: "100", unit: "req/min", color: "bg-green-500" },
+                      { endpoint: "Quote API", limit: "60", unit: "req/min", color: "bg-blue-500" },
+                      { endpoint: "Pools API", limit: "30", unit: "req/min", color: "bg-yellow-500" },
+                      { endpoint: "Transactions API", limit: "20", unit: "req/min", color: "bg-red-500" },
+                    ].map((item) => (
+                      <div key={item.endpoint} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/20">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                          <span className="text-sm font-medium">{item.endpoint}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-primary">{item.limit}</span>
+                          <span className="text-xs text-muted-foreground">{item.unit}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </div>
+
+                {/* Best Practices */}
+                <div className="glass-card p-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <span className="text-primary text-sm">✓</span>
+                    </span>
+                    Best Practices
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { icon: "💾", text: "Cache price responses for at least 30 seconds" },
+                      { icon: "🔌", text: "Use WebSocket for real-time price updates" },
+                      { icon: "✅", text: "Validate token addresses before swaps" },
+                      { icon: "🛡️", text: "Implement proper error handling" },
+                      { icon: "📊", text: "Use 0.5-1% slippage for stable pairs" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-secondary/30 transition-colors">
+                        <span className="text-base">{item.icon}</span>
+                        <span className="text-sm text-muted-foreground">{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Codes */}
+              <div className="glass-card p-6 mt-6">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <span className="text-red-400 text-sm">!</span>
+                  </span>
+                  Error Codes
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { code: "400", title: "Bad Request", description: "Invalid request parameters", color: "yellow" },
+                    { code: "401", title: "Unauthorized", description: "Missing or invalid API key", color: "orange" },
+                    { code: "429", title: "Too Many Requests", description: "Rate limit exceeded", color: "red" },
+                    { code: "500", title: "Server Error", description: "Internal server error", color: "purple" },
+                  ].map((error) => (
+                    <div 
+                      key={error.code} 
+                      className={`relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-[1.02] ${
+                        error.color === "yellow" ? "border-yellow-500/30 bg-yellow-500/5" :
+                        error.color === "orange" ? "border-orange-500/30 bg-orange-500/5" :
+                        error.color === "red" ? "border-red-500/30 bg-red-500/5" :
+                        "border-purple-500/30 bg-purple-500/5"
+                      }`}
+                    >
+                      <div className={`absolute top-0 right-0 w-16 h-16 -mr-4 -mt-4 rounded-full blur-2xl opacity-30 ${
+                        error.color === "yellow" ? "bg-yellow-500" :
+                        error.color === "orange" ? "bg-orange-500" :
+                        error.color === "red" ? "bg-red-500" :
+                        "bg-purple-500"
+                      }`} />
+                      <div className="relative">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold mb-2 ${
+                          error.color === "yellow" ? "bg-yellow-500/20 text-yellow-400" :
+                          error.color === "orange" ? "bg-orange-500/20 text-orange-400" :
+                          error.color === "red" ? "bg-red-500/20 text-red-400" :
+                          "bg-purple-500/20 text-purple-400"
+                        }`}>
+                          {error.code}
+                        </span>
+                        <h4 className="font-semibold text-sm mb-1">{error.title}</h4>
+                        <p className="text-xs text-muted-foreground">{error.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
