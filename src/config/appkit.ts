@@ -39,6 +39,7 @@ const ethersAdapter = new EthersAdapter();
 export const appkit = createAppKit({
   adapters: [ethersAdapter],
   networks,
+  defaultNetwork: base,
   metadata,
   projectId,
   features: {
