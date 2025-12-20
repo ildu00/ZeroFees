@@ -384,7 +384,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                   onChange={(e) => setPriceLower(e.target.value)}
                   placeholder="0.0"
                   disabled={isLoading}
-                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0"
+                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
                 />
               </div>
               <div className="glass-input p-3">
@@ -396,7 +396,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                   onChange={(e) => setPriceUpper(e.target.value)}
                   placeholder="0.0"
                   disabled={isLoading}
-                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0"
+                  className="border-0 bg-transparent p-0 text-base sm:text-lg font-medium h-auto focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
                 />
               </div>
             </div>
@@ -415,7 +415,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 onChange={(e) => setAmount0(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
-                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
+                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
               />
               {token0 && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
@@ -446,7 +446,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 onChange={(e) => setAmount1(e.target.value)}
                 placeholder="0.0"
                 disabled={isLoading}
-                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
+                className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
               />
               {token1 && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
