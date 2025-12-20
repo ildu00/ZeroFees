@@ -115,7 +115,7 @@ export const useAppKitWallet = () => {
   // Update state when connection status changes
   useEffect(() => {
     const isActuallyConnecting = status === 'connecting';
-    
+
     setState(prev => ({
       ...prev,
       isConnected,
@@ -128,11 +128,19 @@ export const useAppKitWallet = () => {
       hasAutoSwitched.current = false;
     }
 
-    // Auto-switch to Base and fetch balance when connected
+    // Auto-switch to Base and fetch balance when connected.
+    // On mobile WalletConnect, doing RPC requests immediately can interrupt the wallet handshake
+    // (shows blank/white sheet in some wallets). Delay slightly after connect.
     if (isConnected && address && walletProvider) {
-      checkAndSwitchToBase();
-      fetchBalance();
+      const t = window.setTimeout(() => {
+        checkAndSwitchToBase();
+        fetchBalance();
+      }, 800);
+
+      return () => window.clearTimeout(t);
     }
+
+    return;
   }, [isConnected, address, status, walletProvider, fetchBalance, checkAndSwitchToBase]);
 
   // Listen for chain changes
