@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
@@ -62,6 +62,8 @@ export const useSwap = () => {
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [isWalletActionPending, setIsWalletActionPending] = useState(false);
+  const walletActionDepthRef = useRef(0);
   const [quote, setQuote] = useState<SwapQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
@@ -71,6 +73,42 @@ export const useSwap = () => {
     if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as ProviderRequest;
     return null;
   }, [walletProvider]);
+
+  const beginWalletAction = useCallback(() => {
+    walletActionDepthRef.current += 1;
+    setIsWalletActionPending(true);
+  }, []);
+
+  const endWalletAction = useCallback(() => {
+    walletActionDepthRef.current = Math.max(0, walletActionDepthRef.current - 1);
+    if (walletActionDepthRef.current === 0) setIsWalletActionPending(false);
+  }, []);
+
+  const requestWithTimeout = useCallback(
+    async <T,>(
+      provider: ProviderRequest,
+      args: { method: string; params?: unknown[] },
+      timeoutMs: number
+    ): Promise<T> => {
+      return await new Promise<T>((resolve, reject) => {
+        const t = window.setTimeout(() => {
+          reject(new Error('WALLET_TIMEOUT'));
+        }, timeoutMs);
+
+        provider
+          .request(args)
+          .then((res) => {
+            window.clearTimeout(t);
+            resolve(res as T);
+          })
+          .catch((err) => {
+            window.clearTimeout(t);
+            reject(err);
+          });
+      });
+    },
+    []
+  );
 
   // Fetch token prices
   const fetchPrices = useCallback(async () => {
@@ -91,6 +129,10 @@ export const useSwap = () => {
 
   // Fetch token balances from wallet
   const fetchBalances = useCallback(async () => {
+    // During a WalletConnect approval/signature on mobile, background RPC calls can
+    // break the wallet handshake (MetaMask shows a blank/white sheet and returns late).
+    if (isWalletActionPending) return;
+
     const provider = getProvider();
     if (!address || !provider) {
       setBalances({});
@@ -100,7 +142,7 @@ export const useSwap = () => {
     setIsLoadingBalances(true);
     try {
       const newBalances: TokenBalances = {};
-      
+
       // Check if on Base network
       const chainId = await provider.request({ method: 'eth_chainId' });
       if (chainId !== BASE_CHAIN_CONFIG.chainId) {
@@ -111,36 +153,38 @@ export const useSwap = () => {
       }
 
       // Fetch ETH balance
-      const ethBalance = await provider.request({
+      const ethBalance = (await provider.request({
         method: 'eth_getBalance',
         params: [address, 'latest'],
-      }) as string;
+      })) as string;
       newBalances['ETH'] = (Number(BigInt(ethBalance)) / 1e18).toFixed(6);
 
       // Fetch ERC20 balances
       const tokens = Object.entries(BASE_TOKENS).filter(([symbol]) => symbol !== 'ETH');
-      
-      await Promise.all(tokens.map(async ([symbol, token]) => {
-        try {
-          const paddedAddress = address.toLowerCase().replace('0x', '').padStart(64, '0');
-          const data = `${ERC20_ABI.balanceOf}${paddedAddress}`;
-          
-          const result = await provider.request({
-            method: 'eth_call',
-            params: [{ to: token.address, data }, 'latest'],
-          }) as string;
-          
-          if (result && result !== '0x') {
-            const balance = Number(BigInt(result)) / Math.pow(10, token.decimals);
-            newBalances[symbol] = balance.toFixed(6);
-          } else {
+
+      await Promise.all(
+        tokens.map(async ([symbol, token]) => {
+          try {
+            const paddedAddress = address.toLowerCase().replace('0x', '').padStart(64, '0');
+            const data = `${ERC20_ABI.balanceOf}${paddedAddress}`;
+
+            const result = (await provider.request({
+              method: 'eth_call',
+              params: [{ to: token.address, data }, 'latest'],
+            })) as string;
+
+            if (result && result !== '0x') {
+              const balance = Number(BigInt(result)) / Math.pow(10, token.decimals);
+              newBalances[symbol] = balance.toFixed(6);
+            } else {
+              newBalances[symbol] = '0';
+            }
+          } catch (err) {
+            console.error(`Error fetching ${symbol} balance:`, err);
             newBalances[symbol] = '0';
           }
-        } catch (err) {
-          console.error(`Error fetching ${symbol} balance:`, err);
-          newBalances[symbol] = '0';
-        }
-      }));
+        })
+      );
 
       setBalances(newBalances);
     } catch (error) {
@@ -148,7 +192,7 @@ export const useSwap = () => {
     } finally {
       setIsLoadingBalances(false);
     }
-  }, [address, getProvider]);
+  }, [address, getProvider, isWalletActionPending]);
 
   // Fetch quote - don't clear existing quote during loading to avoid flicker
   const fetchQuote = useCallback(async (
@@ -225,6 +269,8 @@ export const useSwap = () => {
     if (tokenAddress === BASE_TOKENS.ETH.address) return true; // No approval needed for ETH
 
     try {
+      beginWalletAction();
+
       // Encode approve call
       const spender = SWAP_ROUTER.toLowerCase().replace('0x', '').padStart(64, '0');
       const value = BigInt(amount).toString(16).padStart(64, '0');
@@ -239,14 +285,31 @@ export const useSwap = () => {
         });
       }
 
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: address,
-          to: tokenAddress,
-          data,
-        }],
-      });
+      const txHash = isMobile
+        ? await requestWithTimeout<string>(
+            provider,
+            {
+              method: 'eth_sendTransaction',
+              params: [
+                {
+                  from: address,
+                  to: tokenAddress,
+                  data,
+                },
+              ],
+            },
+            120000
+          )
+        : ((await provider.request({
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                from: address,
+                to: tokenAddress,
+                data,
+              },
+            ],
+          })) as string);
 
       toast.dismiss('mobile-wallet-pending');
 
@@ -256,7 +319,7 @@ export const useSwap = () => {
       }
 
       toast.success('Approval sent!', { description: 'Waiting for confirmation...' });
-      
+
       // Wait for confirmation
       let confirmed = false;
       for (let i = 0; i < 30; i++) {
@@ -275,15 +338,24 @@ export const useSwap = () => {
     } catch (error: any) {
       // Dismiss pending toast on error/rejection
       toast.dismiss('mobile-wallet-pending');
-      
+
+      if (error?.message === 'WALLET_TIMEOUT') {
+        toast.error('Wallet did not respond in time', {
+          description: 'If you approved in MetaMask, return to Safari and try again.',
+        });
+        return false;
+      }
+
       if (error.code === 4001) {
         toast.error('Approval rejected');
       } else {
         toast.error('Approval failed');
       }
       return false;
+    } finally {
+      endWalletAction();
     }
-  }, [address, getProvider]);
+  }, [address, getProvider, requestWithTimeout, beginWalletAction, endWalletAction]);
 
   // Execute swap
   const executeSwap = useCallback(async (
@@ -298,6 +370,8 @@ export const useSwap = () => {
 
     setIsSwapping(true);
     try {
+      beginWalletAction();
+
       // Switch to Base if needed
       const chainId = await provider.request({ method: 'eth_chainId' });
       if (chainId !== BASE_CHAIN_CONFIG.chainId) {
@@ -373,15 +447,33 @@ export const useSwap = () => {
         toast.info('Please confirm the swap in your wallet');
       }
 
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: address,
-          to: SWAP_ROUTER,
-          data: txData,
-          value,
-        }],
-      });
+      const txHash = isMobile
+        ? await requestWithTimeout<string>(
+            provider,
+            {
+              method: 'eth_sendTransaction',
+              params: [
+                {
+                  from: address,
+                  to: SWAP_ROUTER,
+                  data: txData,
+                  value,
+                },
+              ],
+            },
+            120000
+          )
+        : ((await provider.request({
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                from: address,
+                to: SWAP_ROUTER,
+                data: txData,
+                value,
+              },
+            ],
+          })) as string);
 
       // Dismiss the "confirm" toast
       toast.dismiss('mobile-wallet-pending');
@@ -403,7 +495,14 @@ export const useSwap = () => {
     } catch (error: any) {
       // Always dismiss the pending toast on error/rejection
       toast.dismiss('mobile-wallet-pending');
-      
+
+      if (error?.message === 'WALLET_TIMEOUT') {
+        toast.error('Wallet did not respond in time', {
+          description: 'If you confirmed in MetaMask, return to Safari and try again.',
+        });
+        return null;
+      }
+
       console.error('Swap error:', error);
       if (error.code === 4001) {
         toast.error('Swap rejected');
@@ -412,9 +511,10 @@ export const useSwap = () => {
       }
       return null;
     } finally {
+      endWalletAction();
       setIsSwapping(false);
     }
-  }, [address, quote, switchToBase, approveToken, getProvider]);
+  }, [address, quote, switchToBase, approveToken, getProvider, requestWithTimeout, beginWalletAction, endWalletAction]);
 
   // Fetch prices on mount
   useEffect(() => {
@@ -425,12 +525,14 @@ export const useSwap = () => {
 
   // Fetch balances when address changes or on mount
   useEffect(() => {
+    if (isWalletActionPending) return;
+
     if (isConnected && address) {
       fetchBalances();
       const interval = setInterval(fetchBalances, 15000); // Refresh every 15s
       return () => clearInterval(interval);
     }
-  }, [isConnected, address, fetchBalances]);
+  }, [isConnected, address, fetchBalances, isWalletActionPending]);
 
   return {
     prices,
