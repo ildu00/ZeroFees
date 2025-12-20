@@ -118,15 +118,15 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   const selectedFeeTier = FEE_TIERS.find(f => f.value === feeTier) || FEE_TIERS[2];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center pt-20 md:pt-0 overflow-y-auto p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in my-4 max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm">
           <h2 className="text-lg font-semibold">Add Liquidity</h2>

@@ -55,16 +55,16 @@ const SwapConfirmationModal = ({
   const toUsdValue = toToken.price ? (parseFloat(toValue) * toToken.price).toFixed(2) : "0.00";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center pt-20 md:pt-0 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm"
         onClick={!isSwapping ? onClose : undefined}
       />
 
       {/* Modal */}
       <div 
-        className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4 max-h-[90vh] overflow-y-auto overscroll-contain"
+        className="relative z-10 w-full max-w-sm glass-card p-0 animate-scale-in mx-4 my-4 max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-y-auto overscroll-contain"
         onTouchMove={(e) => e.stopPropagation()}
       >
         {/* Header */}
