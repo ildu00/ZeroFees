@@ -627,36 +627,30 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
                 Contract Addresses
               </h2>
 
-              <div className="glass-card p-6">
+              <div className="glass-card p-6 overflow-hidden">
                 <p className="text-muted-foreground mb-4">
                   Key contract addresses on Base mainnet:
                 </p>
 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-border/20">
-                    <span className="text-sm font-medium">Uniswap V3 SwapRouter02</span>
-                    <code className="text-xs bg-secondary/50 px-2 py-1 rounded font-mono">
-                      0x2626664c2603336E57B271c5C0b26F421741e481
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border/20">
-                    <span className="text-sm font-medium">Uniswap V3 Factory</span>
-                    <code className="text-xs bg-secondary/50 px-2 py-1 rounded font-mono">
-                      0x33128a8fC17869897dcE68Ed026d694621f6FDfD
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border/20">
-                    <span className="text-sm font-medium">WETH</span>
-                    <code className="text-xs bg-secondary/50 px-2 py-1 rounded font-mono">
-                      0x4200000000000000000000000000000000000006
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm font-medium">USDC</span>
-                    <code className="text-xs bg-secondary/50 px-2 py-1 rounded font-mono">
-                      0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-                    </code>
-                  </div>
+                  {[
+                    { name: "Uniswap V3 SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
+                    { name: "Uniswap V3 Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
+                    { name: "WETH", address: "0x4200000000000000000000000000000000000006" },
+                    { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                  ].map((contract, i, arr) => (
+                    <div 
+                      key={contract.name} 
+                      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-3 ${
+                        i < arr.length - 1 ? "border-b border-border/20" : ""
+                      }`}
+                    >
+                      <span className="text-sm font-medium">{contract.name}</span>
+                      <code className="text-xs bg-secondary/50 px-2 py-1.5 rounded font-mono truncate max-w-full sm:max-w-[280px] md:max-w-none">
+                        {contract.address}
+                      </code>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mt-4">
