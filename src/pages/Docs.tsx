@@ -1,8 +1,9 @@
 import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Footer from "@/components/Footer";
+import FeedbackForm from "@/components/FeedbackForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Shield, Wallet, ArrowLeftRight, Droplets, BarChart3 } from "lucide-react";
+import { Zap, Shield, Wallet, ArrowLeftRight, Droplets, BarChart3, Globe, Code } from "lucide-react";
 
 const Docs = () => {
   return (
@@ -18,7 +19,7 @@ const Docs = () => {
               Documentation
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to know about using ZERO FEES DEX powered by ReGraph
+              Everything you need to know about using ZeroFees — the decentralized exchange on Base
             </p>
           </div>
 
@@ -28,12 +29,13 @@ const Docs = () => {
             <Card className="glass-card border-white/10">
               <CardContent className="p-6 space-y-4 text-muted-foreground">
                 <p>
-                  ZERO FEES is a decentralized exchange (DEX) built on the Base network using ReGraph technology. 
-                  It allows you to swap tokens, provide liquidity, and earn rewards — all with zero trading fees.
+                  ZeroFees is a decentralized exchange (DEX) built on the Base network. 
+                  It allows you to swap tokens, provide liquidity, and earn rewards with minimal fees.
                 </p>
                 <h3 className="text-foreground font-semibold mt-4">Quick Start:</h3>
                 <ol className="list-decimal list-inside space-y-2">
                   <li>Connect your wallet (MetaMask, WalletConnect, or Coinbase Wallet)</li>
+                  <li>Make sure you're on the Base network (Chain ID: 8453)</li>
                   <li>Select the tokens you want to swap</li>
                   <li>Enter the amount and review the quote</li>
                   <li>Confirm the transaction in your wallet</li>
@@ -50,11 +52,11 @@ const Docs = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Zap className="w-5 h-5 text-primary" />
-                    Zero Fees
+                    Low Fees
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">
-                  Trade without paying any protocol fees. You only pay the network gas fee.
+                  Trade with a minimal 0.3% ReGraph fee. Combined with Base's low gas costs, you get efficient swaps.
                 </CardContent>
               </Card>
 
@@ -66,7 +68,7 @@ const Docs = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">
-                  Instantly swap between any supported tokens with best-in-class rates.
+                  Instantly swap between any supported tokens on Base with competitive rates from liquidity pools.
                 </CardContent>
               </Card>
 
@@ -78,7 +80,7 @@ const Docs = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">
-                  Provide liquidity to pools and earn a share of trading volume.
+                  Provide liquidity to concentrated liquidity pools and earn a share of trading fees.
                 </CardContent>
               </Card>
 
@@ -90,7 +92,31 @@ const Docs = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">
-                  Track and manage your liquidity positions with detailed analytics.
+                  Track and manage your liquidity positions. Add or remove liquidity at any time.
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Globe className="w-5 h-5 text-primary" />
+                    Base Network
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground text-sm">
+                  Built on Base — Coinbase's L2 network with fast transactions and low gas fees.
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Code className="w-5 h-5 text-primary" />
+                    Open Source
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground text-sm">
+                  ZeroFees is fully open source. View our code on GitHub and contribute to the project.
                 </CardContent>
               </Card>
             </div>
@@ -108,7 +134,7 @@ const Docs = () => {
                   </h3>
                   <p>
                     Click the "Connect Wallet" button in the top right corner. Select your preferred wallet provider 
-                    and approve the connection. Make sure you're connected to the Base network.
+                    and approve the connection. Make sure you're connected to the Base network (Chain ID: 8453).
                   </p>
                 </div>
 
@@ -119,8 +145,8 @@ const Docs = () => {
                   </h3>
                   <p>
                     Select the token you want to sell and the token you want to buy. Enter the amount, 
-                    and the system will automatically calculate the best rate. Review the details and 
-                    confirm the swap. The transaction will be processed on the Base blockchain.
+                    and the system will automatically find the best rate. Review the fee breakdown 
+                    (0.3% ReGraph fee + network fee) and confirm the swap.
                   </p>
                 </div>
 
@@ -131,8 +157,8 @@ const Docs = () => {
                   </h3>
                   <p>
                     Navigate to the Pools page to see available liquidity pools. Select a pool and 
-                    click "Add Liquidity". You'll need to provide both tokens in the pair. Once added, 
-                    you'll receive LP tokens representing your share of the pool.
+                    click "Add Liquidity". Choose your price range for concentrated liquidity. 
+                    Provide tokens and earn fees when trades occur in your range.
                   </p>
                 </div>
 
@@ -142,11 +168,38 @@ const Docs = () => {
                     Security
                   </h3>
                   <p>
-                    ZERO FEES is built on ReGraph technology with security as a priority. All smart contracts 
-                    are open-source and audited. Your funds remain in your wallet until you confirm a transaction. 
-                    Always verify transaction details before confirming.
+                    ZeroFees uses battle-tested smart contracts. Your funds remain in your wallet 
+                    until you confirm a transaction. Always verify transaction details and amounts 
+                    before confirming in your wallet.
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Fee Structure */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 text-gradient">Fee Structure</h2>
+            <Card className="glass-card border-white/10">
+              <CardContent className="p-6 space-y-4 text-muted-foreground">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-white/10">
+                    <span className="font-medium text-foreground">ReGraph Fee</span>
+                    <span className="text-primary font-semibold">0.3%</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-white/10">
+                    <span className="font-medium text-foreground">Pool Fee (varies by tier)</span>
+                    <span>0.01% - 1%</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="font-medium text-foreground">Network Gas</span>
+                    <span>Base network rates</span>
+                  </div>
+                </div>
+                <p className="text-sm mt-4">
+                  The ReGraph fee (0.3%) is collected on each swap to support the protocol. 
+                  Pool fees go to liquidity providers. Gas fees are paid to Base network validators.
+                </p>
               </CardContent>
             </Card>
           </section>
@@ -157,20 +210,10 @@ const Docs = () => {
             <div className="space-y-4">
               <Card className="glass-card border-white/10">
                 <CardContent className="p-6">
-                  <h3 className="text-foreground font-semibold mb-2">What is ReGraph?</h3>
+                  <h3 className="text-foreground font-semibold mb-2">What is Base network?</h3>
                   <p className="text-muted-foreground text-sm">
-                    ReGraph is the underlying protocol technology that powers ZERO FEES DEX, enabling 
-                    efficient token swaps and liquidity provision on the Base network.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/10">
-                <CardContent className="p-6">
-                  <h3 className="text-foreground font-semibold mb-2">Why are there no fees?</h3>
-                  <p className="text-muted-foreground text-sm">
-                    ZERO FEES operates without protocol fees to maximize value for traders. 
-                    You only pay the standard Base network gas fees for transactions.
+                    Base is a secure, low-cost Layer 2 network built on Ethereum by Coinbase. 
+                    It offers fast transactions with significantly lower gas fees compared to Ethereum mainnet.
                   </p>
                 </CardContent>
               </Card>
@@ -179,22 +222,48 @@ const Docs = () => {
                 <CardContent className="p-6">
                   <h3 className="text-foreground font-semibold mb-2">Which wallets are supported?</h3>
                   <p className="text-muted-foreground text-sm">
-                    We support MetaMask, WalletConnect-compatible wallets, and Coinbase Wallet. 
-                    Make sure your wallet is configured for the Base network.
+                    We support MetaMask, WalletConnect-compatible wallets, Coinbase Wallet, and other 
+                    EVM-compatible wallets. Make sure your wallet is configured for the Base network.
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="glass-card border-white/10">
                 <CardContent className="p-6">
-                  <h3 className="text-foreground font-semibold mb-2">How do I add the Base network?</h3>
+                  <h3 className="text-foreground font-semibold mb-2">How do I add Base network to my wallet?</h3>
                   <p className="text-muted-foreground text-sm">
-                    When you connect your wallet, you'll be prompted to add the Base network if it's not 
-                    already configured. Alternatively, you can add it manually with Chain ID 8453.
+                    When you connect your wallet, you'll be prompted to add the Base network automatically. 
+                    You can also add it manually: Chain ID 8453, RPC: https://mainnet.base.org
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/10">
+                <CardContent className="p-6">
+                  <h3 className="text-foreground font-semibold mb-2">Can I import custom tokens?</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Yes! Click the token selector and use "Import Token" to add any ERC-20 token 
+                    by its contract address. Make sure to verify the token address before trading.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-white/10">
+                <CardContent className="p-6">
+                  <h3 className="text-foreground font-semibold mb-2">Is ZeroFees open source?</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Yes, ZeroFees is fully open source. You can view the code and contribute on our 
+                    GitHub repository at github.com/ildu00/ZeroFees
                   </p>
                 </CardContent>
               </Card>
             </div>
+          </section>
+
+          {/* Feedback Form */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 text-gradient">Get in Touch</h2>
+            <FeedbackForm />
           </section>
 
           <Footer />
