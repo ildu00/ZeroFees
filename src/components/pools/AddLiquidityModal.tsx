@@ -113,7 +113,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
       
       // Fetch prices from CoinGecko
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${id0},${id1}&vs_currency=usd`
+        `https://api.coingecko.com/api/v3/simple/price?ids=${id0},${id1}&vs_currencies=usd`
       );
       
       if (!response.ok) throw new Error("Failed to fetch prices");
