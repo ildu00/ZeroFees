@@ -83,7 +83,7 @@ const SWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
 
 // ReGraph fee configuration
 const REGRAPH_FEE_PERCENT = 0.3; // 0.3% fee
-const REGRAPH_FEE_WALLET = '0x742d35Cc6634C0532925a3b844Bc9e7595f00000'; // TODO: Replace with actual ReGraph wallet
+const REGRAPH_FEE_WALLET = '0x320b6a1080d6c2abbbff1a6e1d105812e4fb2716'; // ReGraph fee collection wallet
 
 // ERC20 ABI selectors
 const ERC20_ABI = {
