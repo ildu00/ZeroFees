@@ -9,23 +9,27 @@ const projectId = '4a8f1f90250caf4cf14abd6c1d0fe873';
 // Define networks
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, mainnet];
 
-// Metadata for the app - IMPORTANT: url must match the actual origin for mobile deep linking
-const getAppUrl = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return 'https://zerofees.online';
+// Metadata for the app
+// IMPORTANT:
+// - Mobile WalletConnect relies heavily on metadata.url.
+// - Some WalletConnect project settings may only allow the production domain.
+const FALLBACK_PUBLIC_URL = 'https://zerofees.online';
+
+const getMetadataUrl = () => {
+  if (typeof window === 'undefined') return FALLBACK_PUBLIC_URL;
+
+  const { hostname, origin } = window.location;
+  const isPreviewHost =
+    hostname.endsWith('lovableproject.com') || hostname === 'localhost' || hostname === '127.0.0.1';
+
+  return isPreviewHost ? FALLBACK_PUBLIC_URL : origin;
 };
 
 const metadata = {
   name: 'ZeroFees',
   description: 'Zero-fee decentralized exchange on Base',
-  url: getAppUrl(),
-  icons: [getAppUrl() + '/favicon.ico'],
-  redirect: {
-    native: undefined, // We don't have a native app
-    universal: getAppUrl(), // Universal link for returning from mobile wallets
-  }
+  url: getMetadataUrl(),
+  icons: [getMetadataUrl() + '/favicon.ico'],
 };
 
 // Create ethers adapter
