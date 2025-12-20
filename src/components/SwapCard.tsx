@@ -268,11 +268,18 @@ const SwapCard = () => {
     ? (prices[fromToken.symbol] / prices[toToken.symbol]).toFixed(6)
     : "...";
 
-  // Calculate fee display
-  const feePercent = quote?.fee ? (quote.fee / 10000).toFixed(2) : "0.30";
-  const feeUsd = fromValue && fromToken.price 
-    ? (parseFloat(fromValue) * fromToken.price * parseFloat(feePercent) / 100).toFixed(2)
+  // Calculate fees display
+  const uniswapFeePercent = quote?.fee ? (quote.fee / 10000).toFixed(2) : "0.30";
+  const regraphFeePercent = "0.30";
+  const totalFeePercent = (parseFloat(uniswapFeePercent) + parseFloat(regraphFeePercent)).toFixed(2);
+  
+  const regraphFeeUsd = fromValue && fromToken.price 
+    ? (parseFloat(fromValue) * fromToken.price * 0.003).toFixed(2)
     : "0.00";
+  const uniswapFeeUsd = fromValue && fromToken.price 
+    ? (parseFloat(fromValue) * fromToken.price * parseFloat(uniswapFeePercent) / 100).toFixed(2)
+    : "0.00";
+  const totalFeeUsd = (parseFloat(regraphFeeUsd) + parseFloat(uniswapFeeUsd)).toFixed(2);
 
   return (
     <>
@@ -342,12 +349,28 @@ const SwapCard = () => {
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
               title="Refresh quote"
             >
-              <span>~${feeUsd} fee ({feePercent}%)</span>
               <ArrowDownUp className="w-3 h-3" />
             </button>
           </div>
+          
+          {/* Fee breakdown */}
+          <div className="mt-2 pt-2 border-t border-border/20 space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>ReGraph fee</span>
+              <span className="text-primary">${regraphFeeUsd} ({regraphFeePercent}%)</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Network fee (Uniswap)</span>
+              <span>${uniswapFeeUsd} ({uniswapFeePercent}%)</span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span>Total fees</span>
+              <span>${totalFeeUsd} ({totalFeePercent}%)</span>
+            </div>
+          </div>
+
           {quote?.route && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground/70 mt-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground/70 mt-2 pt-2 border-t border-border/20">
               <span>Route: {quote.route}</span>
               <div className="flex items-center gap-2">
                 <span>Slippage: {slippage}%</span>
@@ -358,7 +381,7 @@ const SwapCard = () => {
             </div>
           )}
           {!quote?.route && fromValue && parseFloat(fromValue) > 0 && (
-            <div className="flex items-center justify-end text-xs text-muted-foreground/70 mt-1">
+            <div className="flex items-center justify-end text-xs text-muted-foreground/70 mt-2 pt-2 border-t border-border/20">
               <span className="text-primary/70 tabular-nums min-w-[3rem] text-right">↻ {refreshCountdown}s</span>
             </div>
           )}
@@ -439,7 +462,8 @@ const SwapCard = () => {
         fromValue={fromValue}
         toValue={toValue}
         slippage={slippage}
-        fee={feeUsd}
+        fee={totalFeeUsd}
+        regraphFee={regraphFeeUsd}
         exchangeRate={exchangeRate}
         minReceived={getMinReceived()}
       />
