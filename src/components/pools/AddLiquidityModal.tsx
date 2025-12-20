@@ -1,18 +1,12 @@
 import { useState, useEffect } from "react";
-import { X, Plus, AlertCircle, Loader2, Settings } from "lucide-react";
+import { X, Plus, AlertCircle, Loader2, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { toast } from "sonner";
 import type { Pool } from "@/hooks/useUniswapPools";
-import { useAddLiquidity, BASE_TOKENS, FEE_TIERS } from "@/hooks/useAddLiquidity";
+import { useAddLiquidity, FEE_TIERS } from "@/hooks/useAddLiquidity";
+import TokenSelectModal, { Token, allTokens } from "@/components/TokenSelectModal";
 
 interface AddLiquidityModalProps {
   open: boolean;
@@ -20,34 +14,54 @@ interface AddLiquidityModalProps {
   pool: Pool | null;
 }
 
-const availableTokens = Object.entries(BASE_TOKENS).map(([symbol, info]) => ({
-  symbol,
-  icon: info.icon,
-  address: info.address,
-  decimals: info.decimals,
-}));
+// Local storage key for imported tokens
+const IMPORTED_TOKENS_KEY = "zerofees_liquidity_imported_tokens";
 
 const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   const { isConnected, connect, address } = useWalletContext();
-  const { addLiquidity, isLoading, isApproving, isMinting } = useAddLiquidity();
+  const { addLiquidityWithAddresses, isLoading, isApproving, isMinting } = useAddLiquidity();
   
   const [amount0, setAmount0] = useState("");
   const [amount1, setAmount1] = useState("");
-  const [token0Symbol, setToken0Symbol] = useState(pool?.token0.symbol || "WETH");
-  const [token1Symbol, setToken1Symbol] = useState(pool?.token1.symbol || "USDC");
   const [feeTier, setFeeTier] = useState(3000);
   const [priceLower, setPriceLower] = useState("");
   const [priceUpper, setPriceUpper] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [slippage, setSlippage] = useState("0.5");
 
-  // Update tokens when pool changes
+  // Token selection state
+  const [tokens, setTokens] = useState<Token[]>(allTokens);
+  const [token0, setToken0] = useState<Token | null>(null);
+  const [token1, setToken1] = useState<Token | null>(null);
+  const [showToken0Select, setShowToken0Select] = useState(false);
+  const [showToken1Select, setShowToken1Select] = useState(false);
+
+  // Load imported tokens from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(IMPORTED_TOKENS_KEY);
+    if (stored) {
+      try {
+        const imported = JSON.parse(stored) as Token[];
+        const existingAddresses = allTokens.map(t => t.address.toLowerCase());
+        const newTokens = imported.filter(t => !existingAddresses.includes(t.address.toLowerCase()));
+        if (newTokens.length > 0) {
+          setTokens([...allTokens, ...newTokens]);
+        }
+      } catch (e) {
+        console.error("Failed to load imported tokens", e);
+      }
+    }
+  }, []);
+
+  // Initialize tokens based on pool or defaults
   useEffect(() => {
     if (pool) {
-      const t0 = pool.token0.symbol;
-      const t1 = pool.token1.symbol;
-      setToken0Symbol(BASE_TOKENS[t0] ? t0 : "WETH");
-      setToken1Symbol(BASE_TOKENS[t1] ? t1 : "USDC");
+      // Find tokens from the pool by symbol only (pool doesn't have address)
+      const t0 = tokens.find(t => t.symbol === pool.token0.symbol);
+      const t1 = tokens.find(t => t.symbol === pool.token1.symbol);
+      
+      setToken0(t0 || tokens.find(t => t.symbol === "WETH") || tokens[0]);
+      setToken1(t1 || tokens.find(t => t.symbol === "USDC") || tokens[1]);
       
       // Set fee tier from pool if available
       if (pool.feeTier) {
@@ -56,21 +70,64 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           setFeeTier(tier);
         }
       }
+    } else {
+      // Default tokens
+      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
+      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
     }
-  }, [pool]);
+  }, [pool, tokens, open]);
 
   // Set default price range
   useEffect(() => {
-    if (!priceLower && !priceUpper) {
-      // Default to a ±50% range around current price (assumed 1:1 for simplicity)
+    if (open && !priceLower && !priceUpper) {
       setPriceLower("0.5");
       setPriceUpper("2.0");
     }
   }, [open]);
 
+  // Handle token import
+  const handleImportToken = (newToken: Token) => {
+    const exists = tokens.some(t => t.address.toLowerCase() === newToken.address.toLowerCase());
+    if (!exists) {
+      const updatedTokens = [...tokens, newToken];
+      setTokens(updatedTokens);
+      
+      // Save to localStorage
+      const imported = updatedTokens.filter(
+        t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
+      );
+      localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+    }
+  };
+
+  // Handle token removal
+  const handleRemoveToken = (tokenAddress: string) => {
+    const updatedTokens = tokens.filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
+    setTokens(updatedTokens);
+    
+    // Update localStorage
+    const imported = updatedTokens.filter(
+      t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
+    );
+    localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+    
+    // Reset selection if removed token was selected
+    if (token0?.address.toLowerCase() === tokenAddress.toLowerCase()) {
+      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
+    }
+    if (token1?.address.toLowerCase() === tokenAddress.toLowerCase()) {
+      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
+    }
+  };
+
   if (!open) return null;
 
   const handleAddLiquidity = async () => {
+    if (!token0 || !token1) {
+      toast.error("Please select both tokens");
+      return;
+    }
+
     if (!amount0 && !amount1) {
       toast.error("Please enter at least one amount");
       return;
@@ -89,9 +146,11 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
       return;
     }
 
-    const txHash = await addLiquidity(
-      token0Symbol,
-      token1Symbol,
+    const txHash = await addLiquidityWithAddresses(
+      token0.address,
+      token1.address,
+      token0.decimals || 18,
+      token1.decimals || 18,
       amount0 || "0",
       amount1 || "0",
       feeTier,
@@ -113,8 +172,24 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     }
   };
 
-  const selectedToken0 = availableTokens.find(t => t.symbol === token0Symbol) || availableTokens[0];
-  const selectedToken1 = availableTokens.find(t => t.symbol === token1Symbol) || availableTokens[1];
+  const handleToken0Select = (token: Token) => {
+    // Swap if selecting same as token1
+    if (token.address.toLowerCase() === token1?.address.toLowerCase()) {
+      setToken1(token0);
+    }
+    setToken0(token);
+    setShowToken0Select(false);
+  };
+
+  const handleToken1Select = (token: Token) => {
+    // Swap if selecting same as token0
+    if (token.address.toLowerCase() === token0?.address.toLowerCase()) {
+      setToken0(token1);
+    }
+    setToken1(token);
+    setShowToken1Select(false);
+  };
+
   const selectedFeeTier = FEE_TIERS.find(f => f.value === feeTier) || FEE_TIERS[2];
 
   return (
@@ -126,9 +201,9 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in my-4 max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-md glass-card p-0 animate-scale-in my-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-4 border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
           <h2 className="text-lg font-semibold">Add Liquidity</h2>
           <button
             onClick={handleClose}
@@ -145,39 +220,39 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Token 1</label>
-              <Select value={token0Symbol} onValueChange={setToken0Symbol} disabled={isLoading}>
-                <SelectTrigger className="bg-secondary/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTokens.filter(t => t.symbol !== token1Symbol).map(token => (
-                    <SelectItem key={token.symbol} value={token.symbol}>
-                      <div className="flex items-center gap-2">
-                        <img src={token.icon} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                        {token.symbol}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <button
+                onClick={() => setShowToken0Select(true)}
+                disabled={isLoading}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-secondary/50 hover:bg-secondary/80 border border-border/30 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {token0 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{token0.icon}</span>
+                    <span className="font-medium">{token0.symbol}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Select</span>
+                )}
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Token 2</label>
-              <Select value={token1Symbol} onValueChange={setToken1Symbol} disabled={isLoading}>
-                <SelectTrigger className="bg-secondary/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTokens.filter(t => t.symbol !== token0Symbol).map(token => (
-                    <SelectItem key={token.symbol} value={token.symbol}>
-                      <div className="flex items-center gap-2">
-                        <img src={token.icon} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                        {token.symbol}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <button
+                onClick={() => setShowToken1Select(true)}
+                disabled={isLoading}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-secondary/50 hover:bg-secondary/80 border border-border/30 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {token1 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{token1.icon}</span>
+                    <span className="font-medium">{token1.symbol}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Select</span>
+                )}
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
           </div>
 
@@ -206,7 +281,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           {/* Price Range */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">
-              Price Range ({token0Symbol} per {token1Symbol})
+              Price Range ({token0?.symbol || "Token0"} per {token1?.symbol || "Token1"})
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div className="glass-input p-3">
@@ -239,7 +314,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           {/* Token 0 Input */}
           <div className="glass-input p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Deposit {token0Symbol}</span>
+              <span className="text-sm text-muted-foreground">Deposit {token0?.symbol || "Token"}</span>
             </div>
             <div className="flex items-center gap-3">
               <Input
@@ -251,14 +326,12 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 disabled={isLoading}
                 className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
               />
-              <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
-                <img
-                  src={selectedToken0.icon}
-                  alt={token0Symbol}
-                  className="w-6 h-6 rounded-full"
-                />
-                <span className="font-medium">{token0Symbol}</span>
-              </div>
+              {token0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
+                  <span className="text-lg">{token0.icon}</span>
+                  <span className="font-medium">{token0.symbol}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -272,7 +345,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           {/* Token 1 Input */}
           <div className="glass-input p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Deposit {token1Symbol}</span>
+              <span className="text-sm text-muted-foreground">Deposit {token1?.symbol || "Token"}</span>
             </div>
             <div className="flex items-center gap-3">
               <Input
@@ -284,14 +357,12 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
                 disabled={isLoading}
                 className="flex-1 border-0 bg-transparent text-base sm:text-2xl font-medium h-auto p-0 focus-visible:ring-0"
               />
-              <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
-                <img
-                  src={selectedToken1.icon}
-                  alt={token1Symbol}
-                  className="w-6 h-6 rounded-full"
-                />
-                <span className="font-medium">{token1Symbol}</span>
-              </div>
+              {token1 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 rounded-xl">
+                  <span className="text-lg">{token1.icon}</span>
+                  <span className="font-medium">{token1.symbol}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -335,7 +406,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
               className="w-full"
               size="lg"
               onClick={handleAddLiquidity}
-              disabled={isLoading || (!amount0 && !amount1)}
+              disabled={isLoading || (!amount0 && !amount1) || !token0 || !token1}
             >
               {isLoading ? (
                 <>
@@ -358,6 +429,27 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
           )}
         </div>
       </div>
+
+      {/* Token Select Modals */}
+      <TokenSelectModal
+        isOpen={showToken0Select}
+        onClose={() => setShowToken0Select(false)}
+        onSelect={handleToken0Select}
+        selectedToken={token0 || undefined}
+        tokens={tokens}
+        onImportToken={handleImportToken}
+        onRemoveToken={handleRemoveToken}
+      />
+
+      <TokenSelectModal
+        isOpen={showToken1Select}
+        onClose={() => setShowToken1Select(false)}
+        onSelect={handleToken1Select}
+        selectedToken={token1 || undefined}
+        tokens={tokens}
+        onImportToken={handleImportToken}
+        onRemoveToken={handleRemoveToken}
+      />
     </div>
   );
 };
