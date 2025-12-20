@@ -273,6 +273,9 @@ export const useSwap = () => {
 
       return confirmed;
     } catch (error: any) {
+      // Dismiss pending toast on error/rejection
+      toast.dismiss('mobile-wallet-pending');
+      
       if (error.code === 4001) {
         toast.error('Approval rejected');
       } else {
@@ -398,6 +401,9 @@ export const useSwap = () => {
 
       return txHash as string;
     } catch (error: any) {
+      // Always dismiss the pending toast on error/rejection
+      toast.dismiss('mobile-wallet-pending');
+      
       console.error('Swap error:', error);
       if (error.code === 4001) {
         toast.error('Swap rejected');
