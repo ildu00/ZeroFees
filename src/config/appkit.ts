@@ -68,11 +68,6 @@ export const appkit = createAppKit({
 if (typeof window !== 'undefined') {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-  // NOTE: On iOS (Safari / MetaMask in-app browser), aggressive Shadow DOM scanning
-  // can cause blank/white sheets or stalled WalletConnect flows. Skip it there.
-  if (isIOS) {
-    // no-op
-  } else {
   const normalize = (t: string) =>
     t.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -228,18 +223,25 @@ if (typeof window !== 'undefined') {
     };
     tick();
 
-    // Also do a couple delayed passes (sometimes footer mounts late)
-    setTimeout(hideReownBrandingOnce, 1500);
-    setTimeout(hideReownBrandingOnce, 3500);
-    setTimeout(hideReownBrandingOnce, 8000);
-    setTimeout(hideReownBrandingOnce, 12000);
+    // On iOS, do fewer delayed passes to minimize interference
+    if (isIOS) {
+      setTimeout(hideReownBrandingOnce, 2000);
+      setTimeout(hideReownBrandingOnce, 5000);
+    } else {
+      setTimeout(hideReownBrandingOnce, 1500);
+      setTimeout(hideReownBrandingOnce, 3500);
+      setTimeout(hideReownBrandingOnce, 8000);
+      setTimeout(hideReownBrandingOnce, 12000);
+    }
   };
 
   // Only run on modal open; no global MutationObserver (it can hide wallet list).
   appkit.subscribeEvents((event: any) => {
-    if (event.data?.event === 'MODAL_OPEN') runFor(15000);
+    if (event.data?.event === 'MODAL_OPEN') {
+      // On iOS, run for shorter time to avoid interfering with WalletConnect
+      runFor(isIOS ? 8000 : 15000);
+    }
   });
-  }
 }
 
 export { networks, projectId };
