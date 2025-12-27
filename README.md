@@ -143,9 +143,5 @@ This project is proprietary software.
 
 ## 🔗 Links
 
-- [Live App](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID)
-- [Documentation](/docs)
-
----
-
-Built with ❤️ using [Lovable](https://lovable.dev)
+- [Live App](https://zerofees.online)
+- [Documentation](https://zerofees.online/docs)
