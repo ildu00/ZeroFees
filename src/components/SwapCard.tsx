@@ -205,7 +205,7 @@ const SwapCard = () => {
     
     if (quote && quote.amountOut) {
       const tokenConfig = getTokenConfig(toToken.symbol);
-      const decimals = tokenConfig?.decimals || toToken.decimals || 18;
+      const decimals = tokenConfig?.decimals ?? toToken.decimals ?? 18;
       const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
       return amountOut.toFixed(6);
     }
