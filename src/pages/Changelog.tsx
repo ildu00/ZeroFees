@@ -133,7 +133,7 @@ const Changelog = () => {
       <BackgroundEffects />
       <Header />
 
-      <main className="container mx-auto px-4 pt-28 pb-16 max-w-3xl relative z-10">
+      <main className="container mx-auto px-4 pt-28 pb-20 max-w-3xl relative z-10">
         {/* Hero */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
