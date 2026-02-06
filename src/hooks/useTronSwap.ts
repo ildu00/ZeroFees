@@ -149,7 +149,7 @@ export const useTronSwap = () => {
     if (tokenAddress === TRON_TOKENS.TRX.address) return true; // No approval needed for TRX
 
     try {
-      const contract = await tronWeb.contract().at(tokenAddress);
+      const contract = await tronWeb.contract().at(tokenAddress) as any;
       
       // Approve max amount
       const maxAmount = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
