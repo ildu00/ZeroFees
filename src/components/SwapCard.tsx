@@ -228,8 +228,8 @@ const SwapCard = () => {
 
     const tokenInConfig = getTokenConfig(fromToken.symbol);
     const tokenOutConfig = getTokenConfig(toToken.symbol);
-    const decimalsIn = tokenInConfig?.decimals || fromToken.decimals || 18;
-    const decimalsOut = tokenOutConfig?.decimals || toToken.decimals || 18;
+    const decimalsIn = tokenInConfig?.decimals ?? fromToken.decimals ?? 18;
+    const decimalsOut = tokenOutConfig?.decimals ?? toToken.decimals ?? 18;
 
     const debounceMs = isInAppBrowser ? 50 : 150;
     const timer = setTimeout(() => {
