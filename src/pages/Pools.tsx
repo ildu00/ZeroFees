@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import PoolsList from "@/components/pools/PoolsList";
 import Footer from "@/components/Footer";
+import { useChain } from "@/contexts/ChainContext";
 const Pools = () => {
   return (
     <div className="min-h-screen relative">
