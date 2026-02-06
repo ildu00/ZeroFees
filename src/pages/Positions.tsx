@@ -5,28 +5,64 @@ import Footer from "@/components/Footer";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useChain } from "@/contexts/ChainContext";
 import { usePositions, Position } from "@/hooks/usePositions";
-import { isPositionChainSupported, getUnsupportedChainInfo } from "@/config/positionManagers";
+import { useAvalanchePositions } from "@/hooks/useAvalanchePositions";
+import { useTronPositions } from "@/hooks/useTronPositions";
+import { useNeoPositions } from "@/hooks/useNeoPositions";
+import { isEvmNftPositionChain, getPositionManager } from "@/config/positionManagers";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Wallet, Droplets, AlertCircle, ExternalLink } from "lucide-react";
+import { RefreshCw, Wallet, Droplets, AlertCircle } from "lucide-react";
 import PositionCard from "@/components/positions/PositionCard";
 import RemoveLiquidityModal from "@/components/positions/RemoveLiquidityModal";
 import IncreaseLiquidityModal from "@/components/positions/IncreaseLiquidityModal";
 import AddLiquidityModal from "@/components/pools/AddLiquidityModal";
 
+// Hook result interface for unified access
+interface PositionHookResult {
+  positions: Position[];
+  loading: boolean;
+  collecting: string | null;
+  removing: string | null;
+  increasing: string | null;
+  error: string | null;
+  refetch: () => void;
+  collectFees: (tokenId: string) => Promise<boolean>;
+  removeLiquidity: (tokenId: string, liquidity: string, percent: number) => Promise<boolean>;
+  increaseLiquidity: (tokenId: string, t0: string, t1: string, a0: string, a1: string) => Promise<boolean>;
+  positionManagerAddress: string;
+}
+
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
   const { currentChain } = useChain();
-  const { 
-    positions, loading, collecting, removing, increasing, error, 
-    refetch, collectFees, removeLiquidity, increaseLiquidity, positionManagerAddress 
-  } = usePositions();
+
+  // Always call all hooks (React rules)
+  const evmPositions = usePositions();
+  const avalanchePositions = useAvalanchePositions();
+  const tronPositions = useTronPositions();
+  const neoPositions = useNeoPositions();
+
+  // Select the active hook based on chain
+  const activeHook: PositionHookResult = (() => {
+    switch (currentChain.id) {
+      case 'avalanche': return avalanchePositions;
+      case 'tron': return tronPositions;
+      case 'neo': return neoPositions;
+      default: return evmPositions;
+    }
+  })();
+
+  const {
+    positions, loading, collecting, removing, increasing, error,
+    refetch, collectFees, removeLiquidity, increaseLiquidity, positionManagerAddress
+  } = activeHook;
+
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
   const [addLiquidityModalOpen, setAddLiquidityModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
-  const isSupported = isPositionChainSupported(currentChain.id);
-  const unsupportedInfo = getUnsupportedChainInfo(currentChain.id);
+  const positionManager = getPositionManager(currentChain.id);
+  const dexName = positionManager?.dexName || 'DEX';
 
   const handleCollect = async (tokenId: string) => {
     await collectFees(tokenId);
@@ -65,33 +101,11 @@ const Positions = () => {
               <span className="text-gradient">Positions</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              View and manage your liquidity positions on {currentChain.shortName}
+              View and manage your {dexName} liquidity positions on {currentChain.shortName}
             </p>
           </div>
 
-          {/* Unsupported Chain */}
-          {!isSupported && unsupportedInfo ? (
-            <div className="glass-card p-12 text-center max-w-lg mx-auto">
-              <Droplets className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
-              <h3 className="text-xl font-medium mb-3">
-                Positions on {unsupportedInfo.dexName}
-              </h3>
-              <p className="text-muted-foreground mb-2">
-                {unsupportedInfo.reason}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6">
-                Manage your {currentChain.shortName} positions directly on {unsupportedInfo.dexName}
-              </p>
-              <Button 
-                variant="glow" 
-                size="lg" 
-                onClick={() => window.open(unsupportedInfo.dexUrl, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open {unsupportedInfo.dexName}
-              </Button>
-            </div>
-          ) : !isConnected ? (
+          {!isConnected ? (
             <div className="glass-card p-12 text-center max-w-md mx-auto">
               <Wallet className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
               <h3 className="text-xl font-medium mb-3">Connect Your Wallet</h3>
@@ -108,6 +122,9 @@ const Positions = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-semibold">Your Positions</h2>
+                  <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-full">
+                    {dexName}
+                  </span>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -163,7 +180,7 @@ const Positions = () => {
                   <Droplets className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
                   <h3 className="text-xl font-medium mb-3">No Positions Found</h3>
                   <p className="text-muted-foreground mb-6">
-                    You don't have any liquidity positions yet
+                    You don't have any {dexName} liquidity positions on {currentChain.shortName} yet
                   </p>
                   <Button variant="glow" size="lg" onClick={() => setAddLiquidityModalOpen(true)}>
                     Add Liquidity

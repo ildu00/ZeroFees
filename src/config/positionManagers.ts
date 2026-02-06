@@ -1,13 +1,12 @@
 // Position Manager configuration per chain
-// Maps chain IDs to their NFT-based position manager contracts (Uniswap V3 / PancakeSwap V3 compatible)
 
 export interface PositionManagerConfig {
   address: string;
-  type: 'uniswap-v3' | 'pancakeswap-v3';
+  type: 'uniswap-v3' | 'pancakeswap-v3' | 'trader-joe-lb' | 'sunswap-v3' | 'flamingo';
   dexName: string;
 }
 
-// EVM chains with Uniswap V3 / PancakeSwap V3 compatible position managers
+// All chains with position support
 export const POSITION_MANAGERS: Record<string, PositionManagerConfig> = {
   base: {
     address: '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1',
@@ -39,32 +38,31 @@ export const POSITION_MANAGERS: Record<string, PositionManagerConfig> = {
     type: 'pancakeswap-v3',
     dexName: 'PancakeSwap V3',
   },
+  avalanche: {
+    address: '0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30',
+    type: 'trader-joe-lb',
+    dexName: 'Trader Joe',
+  },
+  tron: {
+    address: 'TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF',
+    type: 'sunswap-v3',
+    dexName: 'SunSwap V3',
+  },
+  neo: {
+    address: '0xde3a4b093abbd07e9a69cdec88a54d9a1fe14975',
+    type: 'flamingo',
+    dexName: 'Flamingo',
+  },
 };
 
-// Chains that don't use NFT-based position tracking
+// No more unsupported chains - all have position support
 export interface UnsupportedChainInfo {
   dexName: string;
   dexUrl: string;
   reason: string;
 }
 
-export const UNSUPPORTED_POSITION_CHAINS: Record<string, UnsupportedChainInfo> = {
-  avalanche: {
-    dexName: 'Trader Joe',
-    dexUrl: 'https://traderjoexyz.com/avalanche/pool',
-    reason: 'Trader Joe uses Liquidity Book positions which are managed on their platform',
-  },
-  tron: {
-    dexName: 'SunSwap',
-    dexUrl: 'https://sun.io/#/v3',
-    reason: 'SunSwap V3 positions are managed through TronLink on their platform',
-  },
-  neo: {
-    dexName: 'Flamingo',
-    dexUrl: 'https://flamingo.finance/earn',
-    reason: 'Flamingo uses LP token-based positions managed on their platform',
-  },
-};
+export const UNSUPPORTED_POSITION_CHAINS: Record<string, UnsupportedChainInfo> = {};
 
 export const getPositionManager = (chainId: string): PositionManagerConfig | undefined => {
   return POSITION_MANAGERS[chainId];
@@ -76,4 +74,10 @@ export const getUnsupportedChainInfo = (chainId: string): UnsupportedChainInfo |
 
 export const isPositionChainSupported = (chainId: string): boolean => {
   return chainId in POSITION_MANAGERS;
+};
+
+// Check if the chain uses EVM-based NFT position manager (Uniswap V3 / PancakeSwap V3)
+export const isEvmNftPositionChain = (chainId: string): boolean => {
+  const manager = POSITION_MANAGERS[chainId];
+  return manager?.type === 'uniswap-v3' || manager?.type === 'pancakeswap-v3';
 };

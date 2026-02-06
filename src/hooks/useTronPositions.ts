@@ -7,119 +7,6 @@ import { Position } from "./usePositions";
 // SunSwap V3 NonfungiblePositionManager on TRON Mainnet
 const SUNSWAP_V3_PM = 'TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF';
 
-// Minimal ABI for SunSwap V3 PM (Uniswap V3 fork)
-const PM_ABI = [
-  {
-    "name": "balanceOf",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [{ "name": "owner", "type": "address" }],
-    "outputs": [{ "name": "", "type": "uint256" }],
-  },
-  {
-    "name": "tokenOfOwnerByIndex",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [
-      { "name": "owner", "type": "address" },
-      { "name": "index", "type": "uint256" }
-    ],
-    "outputs": [{ "name": "", "type": "uint256" }],
-  },
-  {
-    "name": "positions",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [{ "name": "tokenId", "type": "uint256" }],
-    "outputs": [
-      { "name": "nonce", "type": "uint96" },
-      { "name": "operator", "type": "address" },
-      { "name": "token0", "type": "address" },
-      { "name": "token1", "type": "address" },
-      { "name": "fee", "type": "uint24" },
-      { "name": "tickLower", "type": "int24" },
-      { "name": "tickUpper", "type": "int24" },
-      { "name": "liquidity", "type": "uint128" },
-      { "name": "feeGrowthInside0LastX128", "type": "uint256" },
-      { "name": "feeGrowthInside1LastX128", "type": "uint256" },
-      { "name": "tokensOwed0", "type": "uint128" },
-      { "name": "tokensOwed1", "type": "uint128" },
-    ],
-  },
-  {
-    "name": "collect",
-    "type": "function",
-    "stateMutability": "payable",
-    "inputs": [{
-      "name": "params",
-      "type": "tuple",
-      "components": [
-        { "name": "tokenId", "type": "uint256" },
-        { "name": "recipient", "type": "address" },
-        { "name": "amount0Max", "type": "uint128" },
-        { "name": "amount1Max", "type": "uint128" },
-      ],
-    }],
-    "outputs": [
-      { "name": "amount0", "type": "uint256" },
-      { "name": "amount1", "type": "uint256" },
-    ],
-  },
-  {
-    "name": "decreaseLiquidity",
-    "type": "function",
-    "stateMutability": "payable",
-    "inputs": [{
-      "name": "params",
-      "type": "tuple",
-      "components": [
-        { "name": "tokenId", "type": "uint256" },
-        { "name": "liquidity", "type": "uint128" },
-        { "name": "amount0Min", "type": "uint256" },
-        { "name": "amount1Min", "type": "uint256" },
-        { "name": "deadline", "type": "uint256" },
-      ],
-    }],
-    "outputs": [
-      { "name": "amount0", "type": "uint256" },
-      { "name": "amount1", "type": "uint256" },
-    ],
-  },
-  {
-    "name": "increaseLiquidity",
-    "type": "function",
-    "stateMutability": "payable",
-    "inputs": [{
-      "name": "params",
-      "type": "tuple",
-      "components": [
-        { "name": "tokenId", "type": "uint256" },
-        { "name": "amount0Desired", "type": "uint256" },
-        { "name": "amount1Desired", "type": "uint256" },
-        { "name": "amount0Min", "type": "uint256" },
-        { "name": "amount1Min", "type": "uint256" },
-        { "name": "deadline", "type": "uint256" },
-      ],
-    }],
-    "outputs": [
-      { "name": "liquidity", "type": "uint128" },
-      { "name": "amount0", "type": "uint256" },
-      { "name": "amount1", "type": "uint256" },
-    ],
-  },
-];
-
-// ERC20 approve ABI
-const ERC20_APPROVE_ABI = [{
-  "name": "approve",
-  "type": "function",
-  "inputs": [
-    { "name": "spender", "type": "address" },
-    { "name": "amount", "type": "uint256" },
-  ],
-  "outputs": [{ "name": "", "type": "bool" }],
-}];
-
 // Known TRON tokens for icon lookup
 const TRON_TOKEN_ICONS: Record<string, { symbol: string; icon: string }> = {
   'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb': { symbol: 'WTRX', icon: 'https://cryptologos.cc/logos/tron-trx-logo.png' },
@@ -133,13 +20,13 @@ const TRON_TOKEN_ICONS: Record<string, { symbol: string; icon: string }> = {
   'TXWkP3jLBqRGojUih1ShzNyDaN5Csnebok': { symbol: 'WETH', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
 };
 
-function getTokenInfo(address: string): { address: string; symbol: string; icon: string } {
-  const known = TRON_TOKEN_ICONS[address];
-  if (known) return { address, symbol: known.symbol, icon: known.icon };
+function getTokenInfo(addr: string): { address: string; symbol: string; icon: string } {
+  const known = TRON_TOKEN_ICONS[addr];
+  if (known) return { address: addr, symbol: known.symbol, icon: known.icon };
   return {
-    address,
-    symbol: address.slice(0, 6) + '...',
-    icon: `https://ui-avatars.com/api/?name=${address.slice(1, 3)}&background=6366f1&color=fff&size=64`,
+    address: addr,
+    symbol: addr.slice(0, 6) + '...',
+    icon: `https://ui-avatars.com/api/?name=${addr.slice(1, 3)}&background=6366f1&color=fff&size=64`,
   };
 }
 
@@ -165,7 +52,7 @@ export const useTronPositions = () => {
       setLoading(true);
       setError(null);
 
-      const contract = await tronWeb.contract(PM_ABI).at(SUNSWAP_V3_PM) as any;
+      const contract = await tronWeb.contract().at(SUNSWAP_V3_PM) as any;
       const balanceResult = await contract.balanceOf(address).call();
       const balance = Number(balanceResult);
 
@@ -188,9 +75,11 @@ export const useTronPositions = () => {
           const liquidity = pos.liquidity?.toString() || pos[7]?.toString() || '0';
           if (liquidity === '0') continue;
 
-          // Convert TRON hex addresses to base58
-          const token0Addr = tronWeb.address.fromHex(pos.token0 || pos[2]) as string;
-          const token1Addr = tronWeb.address.fromHex(pos.token1 || pos[3]) as string;
+          const token0Hex: string = pos.token0 || pos[2];
+          const token1Hex: string = pos.token1 || pos[3];
+          // TronWeb returns addresses as hex (41...), convert to base58
+          const token0Addr = (tronWeb as any).address?.fromHex?.(token0Hex) || token0Hex;
+          const token1Addr = (tronWeb as any).address?.fromHex?.(token1Hex) || token1Hex;
           const fee = Number(pos.fee || pos[4]);
           const tickLower = Number(pos.tickLower || pos[5]);
           const tickUpper = Number(pos.tickUpper || pos[6]);
@@ -234,17 +123,24 @@ export const useTronPositions = () => {
       setCollecting(tokenId);
       toast.loading("Collecting fees...", { id: `collect-${tokenId}` });
 
-      const contract = await tronWeb.contract(PM_ABI).at(SUNSWAP_V3_PM) as any;
       const maxUint128 = '340282366920938463463374607431768211455';
+      const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+        SUNSWAP_V3_PM,
+        'collect((uint256,address,uint128,uint128))',
+        { feeLimit: 200_000_000, callValue: 0 },
+        [
+          { type: 'uint256', value: tokenId },
+          { type: 'address', value: address },
+          { type: 'uint128', value: maxUint128 },
+          { type: 'uint128', value: maxUint128 },
+        ],
+        address
+      );
 
-      const result = await contract.collect([
-        tokenId,
-        address,
-        maxUint128,
-        maxUint128,
-      ]).send({ feeLimit: 200_000_000 });
+      const signedTx = await tronWeb.trx.sign(transaction);
+      const result = await tronWeb.trx.sendRawTransaction(signedTx) as any;
 
-      if (result) {
+      if (result?.txid || result?.transaction?.txID) {
         toast.success("Fees collected!", { id: `collect-${tokenId}` });
         setTimeout(() => fetchPositions(), 5000);
         return true;
@@ -274,35 +170,52 @@ export const useTronPositions = () => {
       setRemoving(tokenId);
       toast.loading("Removing liquidity...", { id: `remove-${tokenId}` });
 
-      const contract = await tronWeb.contract(PM_ABI).at(SUNSWAP_V3_PM) as any;
       const totalLiquidity = BigInt(liquidity);
       const liquidityToRemove = (totalLiquidity * BigInt(percentToRemove)) / BigInt(100);
       const deadline = Math.floor(Date.now() / 1000) + 1800;
 
       // Decrease liquidity
-      const decreaseResult = await contract.decreaseLiquidity([
-        tokenId,
-        liquidityToRemove.toString(),
-        '0',
-        '0',
-        deadline.toString(),
-      ]).send({ feeLimit: 300_000_000 });
+      const { transaction: decreaseTx } = await tronWeb.transactionBuilder.triggerSmartContract(
+        SUNSWAP_V3_PM,
+        'decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))',
+        { feeLimit: 300_000_000, callValue: 0 },
+        [
+          { type: 'uint256', value: tokenId },
+          { type: 'uint128', value: liquidityToRemove.toString() },
+          { type: 'uint256', value: '0' },
+          { type: 'uint256', value: '0' },
+          { type: 'uint256', value: deadline.toString() },
+        ],
+        address
+      );
 
-      if (!decreaseResult) {
+      const signedDecrease = await tronWeb.trx.sign(decreaseTx);
+      const decreaseResult = await tronWeb.trx.sendRawTransaction(signedDecrease) as any;
+
+      if (!decreaseResult?.txid && !decreaseResult?.transaction?.txID) {
         toast.error("Failed to decrease liquidity", { id: `remove-${tokenId}` });
         return false;
       }
 
-      // Wait a bit, then collect
       await new Promise(resolve => setTimeout(resolve, 3000));
 
+      // Collect tokens
       const maxUint128 = '340282366920938463463374607431768211455';
-      await contract.collect([
-        tokenId,
-        address,
-        maxUint128,
-        maxUint128,
-      ]).send({ feeLimit: 200_000_000 });
+      const { transaction: collectTx } = await tronWeb.transactionBuilder.triggerSmartContract(
+        SUNSWAP_V3_PM,
+        'collect((uint256,address,uint128,uint128))',
+        { feeLimit: 200_000_000, callValue: 0 },
+        [
+          { type: 'uint256', value: tokenId },
+          { type: 'address', value: address },
+          { type: 'uint128', value: maxUint128 },
+          { type: 'uint128', value: maxUint128 },
+        ],
+        address
+      );
+
+      const signedCollect = await tronWeb.trx.sign(collectTx);
+      await tronWeb.trx.sendRawTransaction(signedCollect);
 
       toast.success("Liquidity removed!", { id: `remove-${tokenId}` });
       setTimeout(() => fetchPositions(), 5000);
@@ -332,39 +245,64 @@ export const useTronPositions = () => {
       setIncreasing(tokenId);
 
       // Approve tokens
+      const maxApproval = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
       if (amount0 !== '0') {
         toast.loading("Approving token 0...", { id: `increase-${tokenId}` });
-        const token0Contract = await tronWeb.contract(ERC20_APPROVE_ABI).at(token0Address) as any;
-        await token0Contract.approve(
-          SUNSWAP_V3_PM,
-          '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-        ).send({ feeLimit: 100_000_000 });
+        const { transaction: approveTx0 } = await tronWeb.transactionBuilder.triggerSmartContract(
+          token0Address,
+          'approve(address,uint256)',
+          { feeLimit: 100_000_000, callValue: 0 },
+          [
+            { type: 'address', value: SUNSWAP_V3_PM },
+            { type: 'uint256', value: maxApproval },
+          ],
+          address
+        );
+        const signed0 = await tronWeb.trx.sign(approveTx0);
+        await tronWeb.trx.sendRawTransaction(signed0);
+        await new Promise(r => setTimeout(r, 2000));
       }
 
       if (amount1 !== '0') {
         toast.loading("Approving token 1...", { id: `increase-${tokenId}` });
-        const token1Contract = await tronWeb.contract(ERC20_APPROVE_ABI).at(token1Address) as any;
-        await token1Contract.approve(
-          SUNSWAP_V3_PM,
-          '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-        ).send({ feeLimit: 100_000_000 });
+        const { transaction: approveTx1 } = await tronWeb.transactionBuilder.triggerSmartContract(
+          token1Address,
+          'approve(address,uint256)',
+          { feeLimit: 100_000_000, callValue: 0 },
+          [
+            { type: 'address', value: SUNSWAP_V3_PM },
+            { type: 'uint256', value: maxApproval },
+          ],
+          address
+        );
+        const signed1 = await tronWeb.trx.sign(approveTx1);
+        await tronWeb.trx.sendRawTransaction(signed1);
+        await new Promise(r => setTimeout(r, 2000));
       }
 
       toast.loading("Increasing liquidity...", { id: `increase-${tokenId}` });
-
       const deadline = Math.floor(Date.now() / 1000) + 1800;
-      const contract = await tronWeb.contract(PM_ABI).at(SUNSWAP_V3_PM) as any;
 
-      const result = await contract.increaseLiquidity([
-        tokenId,
-        amount0,
-        amount1,
-        '0',
-        '0',
-        deadline.toString(),
-      ]).send({ feeLimit: 300_000_000 });
+      const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+        SUNSWAP_V3_PM,
+        'increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))',
+        { feeLimit: 300_000_000, callValue: 0 },
+        [
+          { type: 'uint256', value: tokenId },
+          { type: 'uint256', value: amount0 },
+          { type: 'uint256', value: amount1 },
+          { type: 'uint256', value: '0' },
+          { type: 'uint256', value: '0' },
+          { type: 'uint256', value: deadline.toString() },
+        ],
+        address
+      );
 
-      if (result) {
+      const signedTx = await tronWeb.trx.sign(transaction);
+      const result = await tronWeb.trx.sendRawTransaction(signedTx) as any;
+
+      if (result?.txid || result?.transaction?.txID) {
         toast.success("Liquidity increased!", { id: `increase-${tokenId}` });
         setTimeout(() => fetchPositions(), 5000);
         return true;
