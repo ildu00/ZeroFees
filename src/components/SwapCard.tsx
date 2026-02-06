@@ -51,6 +51,7 @@ const SwapCard = () => {
   // Use appropriate swap hook based on chain type
   const evmSwap = useSwap();
   const tronSwap = useTronSwap();
+  const neoSwap = useNeoSwap();
   
   // Select the right swap hook
   const swap = useMemo(() => {
@@ -80,9 +81,35 @@ const SwapCard = () => {
         },
       };
     }
+    if (chainType === 'neo') {
+      return {
+        prices: neoSwap.prices,
+        balances: neoSwap.balances,
+        quote: neoSwap.quote,
+        isLoadingQuote: neoSwap.isLoadingQuote,
+        isSwapping: neoSwap.isSwapping,
+        fetchQuote: neoSwap.fetchQuote,
+        executeSwap: async (
+          fromToken: any,
+          toToken: any,
+          fromValue: string,
+          amountOut: string,
+          slippage: number
+        ) => {
+          const minAmountOut = BigInt(Math.floor(parseFloat(amountOut) * (1 - slippage / 100))).toString();
+          return neoSwap.executeSwap(
+            fromToken.symbol,
+            toToken.symbol,
+            fromValue,
+            minAmountOut,
+            fromToken.decimals
+          );
+        },
+      };
+    }
     // Default: EVM swap
     return evmSwap;
-  }, [chainType, evmSwap, tronSwap]);
+  }, [chainType, evmSwap, tronSwap, neoSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
