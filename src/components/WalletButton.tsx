@@ -55,13 +55,13 @@ const WalletButton = () => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="glass" size="sm" className="gap-1 sm:gap-2 px-2 sm:px-3">
-            <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span className="font-mono text-xs sm:text-sm">{formattedAddress}</span>
-            <span className="text-muted-foreground hidden sm:inline">
+          <Button variant="glass" size="sm" className="gap-1 sm:gap-2 px-2 sm:px-3 h-8 sm:h-9">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent animate-pulse" />
+            <span className="font-mono text-[10px] sm:text-xs md:text-sm">{formattedAddress}</span>
+            <span className="text-muted-foreground hidden lg:inline text-xs">
               {balance} {nativeCurrencySymbol}
             </span>
-            <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:inline" />
+            <ChevronDown className="w-3 h-3 text-muted-foreground hidden md:inline" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 

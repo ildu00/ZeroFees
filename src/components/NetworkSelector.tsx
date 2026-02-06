@@ -40,16 +40,16 @@ const NetworkSelector = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-xl",
+          "flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl",
           "bg-secondary/50 hover:bg-secondary/80 border border-border/30",
           "transition-all duration-200",
           "text-sm font-medium"
         )}
       >
-        <span className="text-lg">{currentChain.icon}</span>
-        <span className="hidden sm:inline text-foreground">{currentChain.shortName}</span>
+        <span className="text-base sm:text-lg">{currentChain.icon}</span>
+        <span className="hidden md:inline text-foreground">{currentChain.shortName}</span>
         <ChevronDown className={cn(
-          "w-4 h-4 text-muted-foreground transition-transform",
+          "w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground transition-transform",
           isOpen && "rotate-180"
         )} />
       </button>
