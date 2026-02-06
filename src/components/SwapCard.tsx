@@ -7,7 +7,7 @@ import SlippageSettingsModal from "./SlippageSettingsModal";
 import SwapConfirmationModal from "./SwapConfirmationModal";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useChain } from "@/contexts/ChainContext";
-import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
+import { useSwap } from "@/hooks/useSwap";
 import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
 import { useNeoSwap, NEO_SWAP_TOKENS } from "@/hooks/useNeoSwap";
 import { useBnbSwap, BNB_TOKENS } from "@/hooks/useBnbSwap";
