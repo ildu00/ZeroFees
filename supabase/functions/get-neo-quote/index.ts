@@ -26,14 +26,19 @@ const NEO_TOKENS: Record<string, { address: string; decimals: number; coingeckoI
   SWTH: { address: "0x78e1330db47634afdb5ea455302ba2d12b8d549d", decimals: 8, coingeckoId: "switcheo" },
 };
 
-// Default prices as fallback
+// Default prices as fallback (updated Feb 2026)
 const DEFAULT_PRICES: Record<string, number> = {
-  neo: 12,
-  gas: 4.5,
-  "flamingo-finance": 0.05,
+  neo: 2.86,
+  gas: 1.72,
+  "flamingo-finance": 0.0037,
   tether: 1,
-  switcheo: 0.01,
+  switcheo: 0.00037,
 };
+
+// Simple in-memory cache for CoinGecko prices (survives within a single function invocation window)
+let cachedPrices: Record<string, number> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60_000; // 60 seconds
 
 // Build swap path through bNEO
 function buildSwapPath(tokenIn: string, tokenOut: string): string[] {
@@ -155,8 +160,14 @@ async function getFlamingoQuote(
   return null;
 }
 
-// Get token prices from CoinGecko
+// Get token prices from CoinGecko (with in-memory cache)
 async function getTokenPrices(): Promise<Record<string, number>> {
+  // Return cached prices if still valid
+  if (cachedPrices && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+    console.log("Using cached NEO prices");
+    return cachedPrices;
+  }
+
   const prices: Record<string, number> = {};
   
   try {
@@ -188,9 +199,19 @@ async function getTokenPrices(): Promise<Record<string, number>> {
       }
     }
     
+    // Cache successful result
+    cachedPrices = prices;
+    cacheTimestamp = Date.now();
+    
     return prices;
   } catch (error) {
     console.error("Error fetching NEO prices:", error);
+    
+    // If we have stale cache, prefer it over defaults
+    if (cachedPrices) {
+      console.log("Using stale cached NEO prices");
+      return cachedPrices;
+    }
     
     for (const [symbol, config] of Object.entries(NEO_TOKENS)) {
       if (config.coingeckoId && DEFAULT_PRICES[config.coingeckoId]) {
