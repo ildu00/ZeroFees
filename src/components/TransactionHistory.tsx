@@ -106,7 +106,12 @@ const TransactionHistory = () => {
   }, [address, isConnected]);
 
   const openExplorer = (hash: string) => {
-    window.open(`https://basescan.org/tx/${hash}`, '_blank');
+    const explorerUrl = blockExplorerUrl || currentChain.blockExplorer;
+    if (chainType === 'tron') {
+      window.open(`${explorerUrl}/#/transaction/${hash}`, '_blank');
+    } else {
+      window.open(`${explorerUrl}/tx/${hash}`, '_blank');
+    }
   };
 
   if (!isConnected) {
