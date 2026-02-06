@@ -9,12 +9,12 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-background/80 backdrop-blur-xl border-b border-border/30">
+    <header className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-6 py-2 sm:py-4 bg-background/80 backdrop-blur-xl border-b border-border/30">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <NavLink to="/" className="text-xl font-bold tracking-tight">
+        <div className="flex items-center gap-4 lg:gap-8">
+          <NavLink to="/" className="text-base sm:text-xl font-bold tracking-tight">
             <span className="text-gradient">ZERO</span>
-            <span className="text-muted-foreground"> FEES</span>
+            <span className="text-muted-foreground text-xs sm:text-xl"> FEES</span>
           </NavLink>
           
           <nav className="hidden md:flex items-center gap-6">
