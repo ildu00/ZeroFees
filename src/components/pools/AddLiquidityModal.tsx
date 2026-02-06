@@ -87,8 +87,8 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     }
   }, [currentPrice, lastEditedAmount, amount0, amount1, calculateLinkedAmount]);
 
-  // Token selection state
-  const [tokens, setTokens] = useState<Token[]>(allTokens);
+  // Custom tokens state (imported by user)
+  const [customTokens, setCustomTokens] = useState<Token[]>([]);
   const [token0, setToken0] = useState<Token | null>(null);
   const [token1, setToken1] = useState<Token | null>(null);
   const [showToken0Select, setShowToken0Select] = useState(false);
@@ -100,16 +100,15 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     if (stored) {
       try {
         const imported = JSON.parse(stored) as Token[];
-        const existingAddresses = allTokens.map(t => t.address.toLowerCase());
-        const newTokens = imported.filter(t => !existingAddresses.includes(t.address.toLowerCase()));
-        if (newTokens.length > 0) {
-          setTokens([...allTokens, ...newTokens]);
-        }
+        setCustomTokens(imported);
       } catch (e) {
         console.error("Failed to load imported tokens", e);
       }
     }
   }, []);
+
+  // Combined tokens for lookup (allTokens from export + custom)
+  const allAvailableTokens = [...allTokens, ...customTokens];
 
   // Initialize tokens based on pool or defaults
   useEffect(() => {
