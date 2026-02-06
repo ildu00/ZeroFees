@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ExternalLink, CheckCircle, Clock, XCircle, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useChain } from '@/contexts/ChainContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
@@ -47,13 +48,21 @@ const shortenHash = (hash: string): string => {
 };
 
 const TransactionHistory = () => {
-  const { address, isConnected } = useWalletContext();
+  const { address, isConnected, blockExplorerUrl, chainType } = useWalletContext();
+  const { currentChain } = useChain();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = async () => {
     if (!address) return;
+    
+    // Only fetch for EVM chains for now
+    if (chainType !== 'evm') {
+      setTransactions([]);
+      setError('Transaction history not available for this network yet');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -97,7 +106,12 @@ const TransactionHistory = () => {
   }, [address, isConnected]);
 
   const openExplorer = (hash: string) => {
-    window.open(`https://basescan.org/tx/${hash}`, '_blank');
+    const explorerUrl = blockExplorerUrl || currentChain.blockExplorer;
+    if (chainType === 'tron') {
+      window.open(`${explorerUrl}/#/transaction/${hash}`, '_blank');
+    } else {
+      window.open(`${explorerUrl}/tx/${hash}`, '_blank');
+    }
   };
 
   if (!isConnected) {
@@ -119,7 +133,7 @@ const TransactionHistory = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">Transactions</h2>
           <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
-            Base
+            {currentChain.shortName}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -157,7 +171,7 @@ const TransactionHistory = () => {
         <div className="text-center py-12 text-muted-foreground">
           <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No swap transactions found</p>
-          <p className="text-sm">Your DEX swap history on Base will appear here</p>
+          <p className="text-sm">Your DEX swap history on {currentChain.name} will appear here</p>
         </div>
       ) : (
         <div className="space-y-3">
