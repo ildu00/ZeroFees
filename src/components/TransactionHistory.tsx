@@ -57,19 +57,12 @@ const TransactionHistory = () => {
   const fetchTransactions = async () => {
     if (!address) return;
     
-    // Only fetch for EVM chains for now
-    if (chainType !== 'evm') {
-      setTransactions([]);
-      setError('Transaction history not available for this network yet');
-      return;
-    }
-    
     setIsLoading(true);
     setError(null);
     
     try {
       const { data, error: fnError } = await supabase.functions.invoke('get-wallet-transactions', {
-        body: { walletAddress: address },
+        body: { walletAddress: address, chain: currentChain.id },
       });
 
       if (fnError) throw fnError;
