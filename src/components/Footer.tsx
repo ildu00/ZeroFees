@@ -6,7 +6,7 @@ const Footer = () => {
         <a href="https://github.com/ildu00/ZeroFees" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub</a>
       </div>
       <p className="mt-6 text-xs text-muted-foreground/50">
-        © 2025 zerofees.online — Decentralized Exchange Protocol
+        © 2025-2026 zerofees.online — Decentralized Exchange Protocol
       </p>
     </footer>
   );
