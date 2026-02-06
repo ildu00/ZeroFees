@@ -471,7 +471,7 @@ const Api = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       
-      <main className="pt-24 pb-20 px-4">
+      <main className="pt-24 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-12">
