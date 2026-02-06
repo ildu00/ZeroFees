@@ -87,7 +87,7 @@ export const useTronSwap = () => {
       await Promise.all(
         tokens.map(async ([symbol, token]) => {
           try {
-            const contract = await tronWeb.contract().at(token.address);
+            const contract = await tronWeb.contract().at(token.address) as any;
             const balance = await contract.balanceOf(address).call();
             const balanceNum = Number(balance) / Math.pow(10, token.decimals);
             newBalances[symbol] = balanceNum.toFixed(6);
