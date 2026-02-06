@@ -84,7 +84,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       nativeCurrencySymbol: currentChain.nativeCurrency.symbol,
       blockExplorerUrl: currentChain.blockExplorer,
     };
-  }, [currentChain, evmWallet, tronWallet]);
+  }, [currentChain, evmWallet, tronWallet, neoWallet]);
 
   return (
     <WalletContext.Provider value={wallet}>

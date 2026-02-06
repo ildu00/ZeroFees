@@ -108,7 +108,7 @@ const WalletButton = () => {
   const getConnectText = () => {
     if (isConnecting) return 'Connecting...';
     if (chainType === 'tron') return 'Connect TronLink';
-    if (chainType === 'neo') return 'Connect Neon';
+    if (chainType === 'neo') return 'Connect NeoLine';
     return 'Connect Wallet';
   };
 
