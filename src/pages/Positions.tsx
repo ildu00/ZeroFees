@@ -30,9 +30,10 @@ interface PositionCardProps {
   isCollecting: boolean;
   isRemoving: boolean;
   isIncreasing: boolean;
+  blockExplorerUrl: string;
 }
 
-const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting, isRemoving, isIncreasing }: PositionCardProps) => {
+const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting, isRemoving, isIncreasing, blockExplorerUrl }: PositionCardProps) => {
   const hasFees = position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0';
   const isLoading = isCollecting || isRemoving || isIncreasing;
   
