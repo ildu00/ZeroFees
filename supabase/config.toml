@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.get-uniswap-pools]
 verify_jwt = false
+
+[functions.get-pancakeswap-quote]
+verify_jwt = false

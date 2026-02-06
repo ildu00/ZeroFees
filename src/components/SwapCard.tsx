@@ -10,6 +10,7 @@ import { useChain } from "@/contexts/ChainContext";
 import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
 import { useNeoSwap, NEO_SWAP_TOKENS } from "@/hooks/useNeoSwap";
+import { useBnbSwap, BNB_TOKENS } from "@/hooks/useBnbSwap";
 import { getTokensForChain, Token as ChainToken } from "@/config/tokens";
 import { toast } from "sonner";
 
@@ -52,6 +53,7 @@ const SwapCard = () => {
   const evmSwap = useSwap();
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
+  const bnbSwap = useBnbSwap();
   
   // Select the right swap hook
   const swap = useMemo(() => {
@@ -107,9 +109,13 @@ const SwapCard = () => {
         },
       };
     }
-    // Default: EVM swap
+    // BSC / BNB Chain → PancakeSwap
+    if (currentChain.id === 'bsc') {
+      return bnbSwap;
+    }
+    // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
     return evmSwap;
-  }, [chainType, evmSwap, tronSwap, neoSwap]);
+  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
@@ -196,8 +202,11 @@ const SwapCard = () => {
     if (chainType === 'neo') {
       return NEO_SWAP_TOKENS[symbol as keyof typeof NEO_SWAP_TOKENS];
     }
+    if (currentChain.id === 'bsc') {
+      return BNB_TOKENS[symbol as keyof typeof BNB_TOKENS];
+    }
     return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
-  }, [chainType]);
+  }, [chainType, currentChain.id]);
 
   // Calculate display value
   const calculateToValue = useCallback(() => {

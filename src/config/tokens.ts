@@ -71,6 +71,17 @@ export const BSC_TOKENS: Token[] = [
   { symbol: 'BUSD', name: 'Binance USD', address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', decimals: 18, icon: '💵', coingeckoId: 'binance-usd' },
   { symbol: 'CAKE', name: 'PancakeSwap', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', decimals: 18, icon: '🥞', coingeckoId: 'pancakeswap-token' },
   { symbol: 'ETH', name: 'Ethereum', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', decimals: 18, icon: '⟠', coingeckoId: 'ethereum' },
+  { symbol: 'BTCB', name: 'Bitcoin BEP2', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', decimals: 18, icon: '₿', coingeckoId: 'binance-bitcoin' },
+  { symbol: 'XRP', name: 'XRP', address: '0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE', decimals: 18, icon: '💧', coingeckoId: 'ripple' },
+  { symbol: 'ADA', name: 'Cardano', address: '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47', decimals: 18, icon: '🔵', coingeckoId: 'cardano' },
+  { symbol: 'DOT', name: 'Polkadot', address: '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402', decimals: 18, icon: '⬛', coingeckoId: 'polkadot' },
+  { symbol: 'LINK', name: 'Chainlink', address: '0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD', decimals: 18, icon: '🔗', coingeckoId: 'chainlink' },
+  { symbol: 'UNI', name: 'Uniswap', address: '0xBf5140A22578168FD562DCcF235E5D43A02ce9B1', decimals: 18, icon: '🦄', coingeckoId: 'uniswap' },
+  { symbol: 'DOGE', name: 'Dogecoin', address: '0xbA2aE424d960c26247Dd6c32edC70B295c744C43', decimals: 8, icon: '🐕', coingeckoId: 'dogecoin' },
+  { symbol: 'SHIB', name: 'Shiba Inu', address: '0x2859e4544C4bB03966803b044A93563Bd2D0DD4D', decimals: 18, icon: '🐶', coingeckoId: 'shiba-inu' },
+  { symbol: 'DAI', name: 'Dai Stablecoin', address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', decimals: 18, icon: '🔶', coingeckoId: 'dai' },
+  { symbol: 'XVS', name: 'Venus', address: '0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63', decimals: 18, icon: '🪐', coingeckoId: 'venus' },
+  { symbol: 'TWT', name: 'Trust Wallet', address: '0x4B0F1812e5Df2A09796481Ff14017e6005508003', decimals: 18, icon: '🛡️', coingeckoId: 'trust-wallet-token' },
 ];
 
 // Optimism tokens
