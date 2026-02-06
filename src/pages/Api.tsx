@@ -689,36 +689,27 @@ const Api = () => {
                   title="Get Liquidity Pools"
                   method="POST"
                   endpoint={`${baseUrl}/get-uniswap-pools`}
-                  description="Fetches top liquidity pools on Base network, including TVL, volume, and fee tier information."
+                  description="Fetches top liquidity pools for any supported chain, including TVL, volume, APR, and fee tier information. Data is sourced from GeckoTerminal and DeFiLlama."
                   requestBody={`{
-  "limit": 20,
-  "orderBy": "totalValueLockedUSD"
+  "chain": "base"  // or: ethereum, arbitrum, polygon, optimism, bsc, avalanche, tron, neo
 }`}
                   responseBody={`{
   "pools": [
     {
-      "id": "0x...",
-      "token0": {
-        "symbol": "WETH",
-        "name": "Wrapped Ether",
-        "decimals": "18"
-      },
-      "token1": {
-        "symbol": "USDC",
-        "name": "USD Coin",
-        "decimals": "6"
-      },
-      "feeTier": "500",
-      "totalValueLockedUSD": "45000000.00",
-      "volumeUSD": "120000000.00",
-      "token0Price": "2986.50",
-      "token1Price": "0.000335"
+      "id": "base_0x...",
+      "token0": { "symbol": "WETH", "icon": "https://..." },
+      "token1": { "symbol": "USDC", "icon": "https://..." },
+      "tvl": 45000000,
+      "apr": 12.5,
+      "volume24h": 8500000,
+      "fees24h": 25500,
+      "feeTier": 0.3
     }
-  ]
+  ],
+  "chain": "base"
 }`}
                   parameters={[
-                    { name: "limit", type: "number", required: false, description: "Number of pools to return (default: 20, max: 100)" },
-                    { name: "orderBy", type: "string", required: false, description: "Sort field: totalValueLockedUSD, volumeUSD" },
+                    { name: "chain", type: "string", required: false, description: "Chain ID: base, ethereum, arbitrum, polygon, optimism, bsc, avalanche, tron, neo (default: base)" },
                   ]}
                 />
               </div>
