@@ -214,7 +214,7 @@ const Positions = () => {
               <span className="text-gradient">Positions</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              View and manage your liquidity positions on Base
+              View and manage your liquidity positions on {currentChain.shortName}
             </p>
           </div>
 
