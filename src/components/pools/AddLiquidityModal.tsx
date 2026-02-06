@@ -195,36 +195,26 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
 
   // Handle token import
   const handleImportToken = (newToken: Token) => {
-    const exists = tokens.some(t => t.address.toLowerCase() === newToken.address.toLowerCase());
+    const exists = allAvailableTokens.some(t => t.address.toLowerCase() === newToken.address.toLowerCase());
     if (!exists) {
-      const updatedTokens = [...tokens, newToken];
-      setTokens(updatedTokens);
-      
-      // Save to localStorage
-      const imported = updatedTokens.filter(
-        t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
-      );
-      localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+      const updatedCustomTokens = [...customTokens, newToken];
+      setCustomTokens(updatedCustomTokens);
+      localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(updatedCustomTokens));
     }
   };
 
   // Handle token removal
   const handleRemoveToken = (tokenAddress: string) => {
-    const updatedTokens = tokens.filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
-    setTokens(updatedTokens);
-    
-    // Update localStorage
-    const imported = updatedTokens.filter(
-      t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
-    );
-    localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+    const updatedCustomTokens = customTokens.filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
+    setCustomTokens(updatedCustomTokens);
+    localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(updatedCustomTokens));
     
     // Reset selection if removed token was selected
     if (token0?.address.toLowerCase() === tokenAddress.toLowerCase()) {
-      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
+      setToken0(allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
     }
     if (token1?.address.toLowerCase() === tokenAddress.toLowerCase()) {
-      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken1(allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
     }
   };
 
