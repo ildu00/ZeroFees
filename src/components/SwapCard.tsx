@@ -202,8 +202,11 @@ const SwapCard = () => {
     if (chainType === 'neo') {
       return NEO_SWAP_TOKENS[symbol as keyof typeof NEO_SWAP_TOKENS];
     }
+    if (currentChain.id === 'bsc') {
+      return BNB_TOKENS[symbol as keyof typeof BNB_TOKENS];
+    }
     return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
-  }, [chainType]);
+  }, [chainType, currentChain.id]);
 
   // Calculate display value
   const calculateToValue = useCallback(() => {
