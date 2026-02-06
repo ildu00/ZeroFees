@@ -24,6 +24,7 @@ const formatCurrency = (value: number) => {
 type SortOption = 'tvl' | 'apr' | 'volume';
 
 const PoolsList = () => {
+  const { currentChain } = useChain();
   const { pools, loading, error, refetch } = useUniswapPools();
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
