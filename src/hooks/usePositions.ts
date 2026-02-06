@@ -1,17 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useChain } from "@/contexts/ChainContext";
 import { toast } from "sonner";
-
-// Uniswap V3 contracts on Base
-const NONFUNGIBLE_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
-
-// Known tokens on Base
-const KNOWN_TOKENS: Record<string, { symbol: string; decimals: number; icon: string }> = {
-  '0x4200000000000000000000000000000000000006': { symbol: 'WETH', decimals: 18, icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': { symbol: 'USDC', decimals: 6, icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
-  '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca': { symbol: 'USDbC', decimals: 6, icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
-  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': { symbol: 'DAI', decimals: 18, icon: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png' },
-};
+import { getPositionManager } from "@/config/positionManagers";
+import { getTokensForChain, Token as ConfigToken } from "@/config/tokens";
 
 // Type for EIP-1193 provider request
 interface ProviderRequest {
@@ -31,8 +23,69 @@ export interface Position {
   inRange: boolean;
 }
 
+// Build known tokens lookup from config tokens for current chain
+const buildKnownTokens = (chainId: string): Record<string, { symbol: string; decimals: number; icon: string }> => {
+  const tokens = getTokensForChain(chainId);
+  const map: Record<string, { symbol: string; decimals: number; icon: string }> = {};
+  
+  for (const token of tokens) {
+    if (token.address && token.address !== '0x0000000000000000000000000000000000000000' && token.address !== 'native') {
+      map[token.address.toLowerCase()] = {
+        symbol: token.symbol,
+        decimals: token.decimals,
+        icon: getTokenIcon(token),
+      };
+    }
+  }
+  return map;
+};
+
+// Map token config icons to image URLs where possible
+const getTokenIcon = (token: ConfigToken): string => {
+  const iconMap: Record<string, string> = {
+    'WETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+    'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    'USDC.e': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    'USDbC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    'USDT.e': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    'DAI': 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png',
+    'DAI.e': 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png',
+    'WBTC': 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png',
+    'WBTC.e': 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png',
+    'WBNB': 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+    'BNB': 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+    'MATIC': 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+    'WMATIC': 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+    'UNI': 'https://cryptologos.cc/logos/uniswap-uni-logo.png',
+    'LINK': 'https://cryptologos.cc/logos/chainlink-link-logo.png',
+    'LINK.e': 'https://cryptologos.cc/logos/chainlink-link-logo.png',
+    'AAVE': 'https://cryptologos.cc/logos/aave-aave-logo.png',
+    'AAVE.e': 'https://cryptologos.cc/logos/aave-aave-logo.png',
+    'ARB': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png',
+    'OP': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png',
+    'AVAX': 'https://cryptologos.cc/logos/avalanche-avax-logo.png',
+    'WAVAX': 'https://cryptologos.cc/logos/avalanche-avax-logo.png',
+    'CAKE': 'https://cryptologos.cc/logos/pancakeswap-cake-logo.png',
+    'cbETH': 'https://cryptologos.cc/logos/coinbase-wrapped-staked-eth-cbeth-logo.png',
+    'wstETH': 'https://cryptologos.cc/logos/lido-staked-ether-steth-logo.png',
+    'SNX': 'https://cryptologos.cc/logos/synthetix-network-token-snx-logo.png',
+    'MKR': 'https://cryptologos.cc/logos/maker-mkr-logo.png',
+    'GMX': 'https://cryptologos.cc/logos/gmx-gmx-logo.png',
+    'BUSD': 'https://cryptologos.cc/logos/binance-usd-busd-logo.png',
+    'BTCB': 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png',
+  };
+  
+  if (iconMap[token.symbol]) return iconMap[token.symbol];
+  
+  // Fallback: generate avatar
+  return `https://ui-avatars.com/api/?name=${token.symbol.slice(0, 2)}&background=6366f1&color=fff&size=64`;
+};
+
 export const usePositions = () => {
   const { address, isConnected, walletProvider } = useWalletContext();
+  const { currentChain } = useChain();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
@@ -40,19 +93,24 @@ export const usePositions = () => {
   const [increasing, setIncreasing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const chainId = currentChain.id;
+  const positionManager = getPositionManager(chainId);
+  const positionManagerAddress = positionManager?.address || '';
+
   const getProvider = useCallback((): ProviderRequest | null => {
     if (walletProvider) return walletProvider as unknown as ProviderRequest;
     if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as ProviderRequest;
     return null;
   }, [walletProvider]);
 
-  const getTokenInfo = (tokenAddress: string) => {
+  const getTokenInfo = useCallback((tokenAddress: string) => {
+    const knownTokens = buildKnownTokens(chainId);
     const addr = tokenAddress.toLowerCase();
-    if (KNOWN_TOKENS[addr]) {
+    if (knownTokens[addr]) {
       return {
         address: tokenAddress,
-        symbol: KNOWN_TOKENS[addr].symbol,
-        icon: KNOWN_TOKENS[addr].icon,
+        symbol: knownTokens[addr].symbol,
+        icon: knownTokens[addr].icon,
       };
     }
     return {
@@ -60,58 +118,9 @@ export const usePositions = () => {
       symbol: tokenAddress.slice(0, 6) + '...',
       icon: `https://ui-avatars.com/api/?name=${tokenAddress.slice(2, 4)}&background=6366f1&color=fff&size=64`,
     };
-  };
+  }, [chainId]);
 
-  const fetchPositions = useCallback(async () => {
-    const provider = getProvider();
-    if (!provider || !address || !isConnected) {
-      setPositions([]);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Get balance of NFT positions
-      // balanceOf(address) = 0x70a08231
-      const balanceData = `0x70a08231${address.slice(2).padStart(64, '0')}`;
-      const balanceResult = await provider.request({
-        method: 'eth_call',
-        params: [{
-          to: NONFUNGIBLE_POSITION_MANAGER,
-          data: balanceData,
-        }, 'latest'],
-      });
-
-      const balance = parseInt(balanceResult as string, 16);
-      console.log(`User has ${balance} positions`);
-
-      if (balance === 0) {
-        setPositions([]);
-        return;
-      }
-
-      const positionPromises: Promise<Position | null>[] = [];
-
-      for (let i = 0; i < balance; i++) {
-        positionPromises.push(fetchPositionByIndex(provider, address, i));
-      }
-
-      const results = await Promise.all(positionPromises);
-      const validPositions = results.filter((p): p is Position => p !== null);
-      
-      setPositions(validPositions);
-    } catch (err) {
-      console.error("Error fetching positions:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch positions");
-      setPositions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [address, isConnected, getProvider]);
-
-  const fetchPositionByIndex = async (
+  const fetchPositionByIndex = useCallback(async (
     provider: ProviderRequest,
     ownerAddress: string,
     index: number
@@ -122,7 +131,7 @@ export const usePositions = () => {
       const tokenIdResult = await provider.request({
         method: 'eth_call',
         params: [{
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: tokenIdData,
         }, 'latest'],
       });
@@ -134,18 +143,13 @@ export const usePositions = () => {
       const positionResult = await provider.request({
         method: 'eth_call',
         params: [{
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: positionData,
         }, 'latest'],
       });
 
       // Decode position data
       const data = (positionResult as string).slice(2);
-      // Each value is 32 bytes (64 hex chars)
-      // nonce (0), operator (1), token0 (2), token1 (3), fee (4), tickLower (5), tickUpper (6), 
-      // liquidity (7), feeGrowthInside0LastX128 (8), feeGrowthInside1LastX128 (9), 
-      // tokensOwed0 (10), tokensOwed1 (11)
-
       const token0Address = '0x' + data.slice(64 * 2 + 24, 64 * 3);
       const token1Address = '0x' + data.slice(64 * 3 + 24, 64 * 4);
       const fee = parseInt(data.slice(64 * 4, 64 * 5), 16);
@@ -160,8 +164,7 @@ export const usePositions = () => {
         return null;
       }
 
-      // Get current tick to determine if in range (simplified - would need pool contract)
-      const inRange = true; // Placeholder - would need to query pool for current tick
+      const inRange = true; // Would need pool contract query for exact range check
 
       return {
         tokenId,
@@ -179,12 +182,58 @@ export const usePositions = () => {
       console.error(`Error fetching position ${index}:`, err);
       return null;
     }
-  };
+  }, [positionManagerAddress, getTokenInfo]);
+
+  const fetchPositions = useCallback(async () => {
+    const provider = getProvider();
+    if (!provider || !address || !isConnected || !positionManagerAddress) {
+      setPositions([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // balanceOf(address) = 0x70a08231
+      const balanceData = `0x70a08231${address.slice(2).padStart(64, '0')}`;
+      const balanceResult = await provider.request({
+        method: 'eth_call',
+        params: [{
+          to: positionManagerAddress,
+          data: balanceData,
+        }, 'latest'],
+      });
+
+      const balance = parseInt(balanceResult as string, 16);
+      console.log(`[${chainId}] User has ${balance} positions`);
+
+      if (balance === 0) {
+        setPositions([]);
+        return;
+      }
+
+      const positionPromises: Promise<Position | null>[] = [];
+      for (let i = 0; i < balance; i++) {
+        positionPromises.push(fetchPositionByIndex(provider, address, i));
+      }
+
+      const results = await Promise.all(positionPromises);
+      const validPositions = results.filter((p): p is Position => p !== null);
+      setPositions(validPositions);
+    } catch (err) {
+      console.error("Error fetching positions:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch positions");
+      setPositions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [address, isConnected, getProvider, positionManagerAddress, chainId, fetchPositionByIndex]);
 
   // Collect fees from a position
   const collectFees = useCallback(async (tokenId: string): Promise<boolean> => {
     const provider = getProvider();
-    if (!provider || !address) {
+    if (!provider || !address || !positionManagerAddress) {
       toast.error("Wallet not connected");
       return false;
     }
@@ -193,10 +242,7 @@ export const usePositions = () => {
       setCollecting(tokenId);
       toast.loading("Collecting fees...", { id: `collect-${tokenId}` });
 
-      // collect((uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max))
-      // Function selector: 0xfc6f7865
       const maxUint128 = BigInt("0xffffffffffffffffffffffffffffffff");
-      
       const collectData = encodeCollectCall({
         tokenId: BigInt(tokenId),
         recipient: address,
@@ -208,12 +254,11 @@ export const usePositions = () => {
         method: 'eth_sendTransaction',
         params: [{
           from: address,
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: collectData,
         }],
       }) as string;
 
-      // Wait for confirmation
       let receipt: { status: string } | null = null;
       while (!receipt) {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -225,7 +270,6 @@ export const usePositions = () => {
 
       if (receipt.status === '0x1') {
         toast.success("Fees collected successfully!", { id: `collect-${tokenId}` });
-        // Refresh positions to update unclaimed fees
         await fetchPositions();
         return true;
       } else {
@@ -239,16 +283,16 @@ export const usePositions = () => {
     } finally {
       setCollecting(null);
     }
-  }, [address, getProvider, fetchPositions]);
+  }, [address, getProvider, fetchPositions, positionManagerAddress]);
 
   // Remove liquidity from a position
   const removeLiquidity = useCallback(async (
-    tokenId: string, 
-    liquidity: string, 
+    tokenId: string,
+    liquidity: string,
     percentToRemove: number
   ): Promise<boolean> => {
     const provider = getProvider();
-    if (!provider || !address) {
+    if (!provider || !address || !positionManagerAddress) {
       toast.error("Wallet not connected");
       return false;
     }
@@ -257,18 +301,14 @@ export const usePositions = () => {
       setRemoving(tokenId);
       toast.loading("Removing liquidity...", { id: `remove-${tokenId}` });
 
-      // Calculate liquidity to remove
       const totalLiquidity = BigInt(liquidity);
       const liquidityToRemove = (totalLiquidity * BigInt(percentToRemove)) / BigInt(100);
-      
-      const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
+      const deadline = Math.floor(Date.now() / 1000) + 1800;
 
-      // Step 1: decreaseLiquidity
-      // decreaseLiquidity((uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min, uint256 deadline))
       const decreaseData = encodeDecreaseLiquidityCall({
         tokenId: BigInt(tokenId),
         liquidity: liquidityToRemove,
-        amount0Min: BigInt(0), // Accept any amount (slippage protection disabled for simplicity)
+        amount0Min: BigInt(0),
         amount1Min: BigInt(0),
         deadline: BigInt(deadline),
       });
@@ -277,12 +317,11 @@ export const usePositions = () => {
         method: 'eth_sendTransaction',
         params: [{
           from: address,
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: decreaseData,
         }],
       }) as string;
 
-      // Wait for confirmation
       let receipt1: { status: string } | null = null;
       while (!receipt1) {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -297,7 +336,7 @@ export const usePositions = () => {
         return false;
       }
 
-      // Step 2: Collect the tokens
+      // Collect the tokens
       const maxUint128 = BigInt("0xffffffffffffffffffffffffffffffff");
       const collectData = encodeCollectCall({
         tokenId: BigInt(tokenId),
@@ -310,12 +349,11 @@ export const usePositions = () => {
         method: 'eth_sendTransaction',
         params: [{
           from: address,
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: collectData,
         }],
       }) as string;
 
-      // Wait for confirmation
       let receipt2: { status: string } | null = null;
       while (!receipt2) {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -327,7 +365,6 @@ export const usePositions = () => {
 
       if (receipt2.status === '0x1') {
         toast.success("Liquidity removed successfully!", { id: `remove-${tokenId}` });
-        // Refresh positions
         await fetchPositions();
         return true;
       } else {
@@ -341,7 +378,7 @@ export const usePositions = () => {
     } finally {
       setRemoving(null);
     }
-  }, [address, getProvider, fetchPositions]);
+  }, [address, getProvider, fetchPositions, positionManagerAddress]);
 
   // Increase liquidity for a position
   const increaseLiquidity = useCallback(async (
@@ -352,7 +389,7 @@ export const usePositions = () => {
     amount1: string
   ): Promise<boolean> => {
     const provider = getProvider();
-    if (!provider || !address) {
+    if (!provider || !address || !positionManagerAddress) {
       toast.error("Wallet not connected");
       return false;
     }
@@ -361,12 +398,10 @@ export const usePositions = () => {
       setIncreasing(tokenId);
       toast.loading("Approving tokens...", { id: `increase-${tokenId}` });
 
-      // First approve both tokens
       const approveAmount = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-      
-      // Approve token0
+
       if (amount0 !== '0') {
-        const approveData0 = encodeApproveCall(NONFUNGIBLE_POSITION_MANAGER, approveAmount);
+        const approveData0 = encodeApproveCall(positionManagerAddress, approveAmount);
         await provider.request({
           method: 'eth_sendTransaction',
           params: [{
@@ -377,9 +412,8 @@ export const usePositions = () => {
         });
       }
 
-      // Approve token1
       if (amount1 !== '0') {
-        const approveData1 = encodeApproveCall(NONFUNGIBLE_POSITION_MANAGER, approveAmount);
+        const approveData1 = encodeApproveCall(positionManagerAddress, approveAmount);
         await provider.request({
           method: 'eth_sendTransaction',
           params: [{
@@ -391,15 +425,13 @@ export const usePositions = () => {
       }
 
       toast.loading("Increasing liquidity...", { id: `increase-${tokenId}` });
+      const deadline = Math.floor(Date.now() / 1000) + 1800;
 
-      const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
-
-      // increaseLiquidity((uint256 tokenId, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, uint256 deadline))
       const increaseData = encodeIncreaseLiquidityCall({
         tokenId: BigInt(tokenId),
         amount0Desired: BigInt(amount0),
         amount1Desired: BigInt(amount1),
-        amount0Min: BigInt(0), // Accept any slippage for simplicity
+        amount0Min: BigInt(0),
         amount1Min: BigInt(0),
         deadline: BigInt(deadline),
       });
@@ -408,12 +440,11 @@ export const usePositions = () => {
         method: 'eth_sendTransaction',
         params: [{
           from: address,
-          to: NONFUNGIBLE_POSITION_MANAGER,
+          to: positionManagerAddress,
           data: increaseData,
         }],
       }) as string;
 
-      // Wait for confirmation
       let receipt: { status: string } | null = null;
       while (!receipt) {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -438,15 +469,16 @@ export const usePositions = () => {
     } finally {
       setIncreasing(null);
     }
-  }, [address, getProvider, fetchPositions]);
+  }, [address, getProvider, fetchPositions, positionManagerAddress]);
 
+  // Re-fetch on chain or wallet change
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && positionManagerAddress) {
       fetchPositions();
     } else {
       setPositions([]);
     }
-  }, [isConnected, address, fetchPositions]);
+  }, [isConnected, address, fetchPositions, positionManagerAddress, chainId]);
 
   return {
     positions,
@@ -459,37 +491,34 @@ export const usePositions = () => {
     collectFees,
     removeLiquidity,
     increaseLiquidity,
+    positionManagerAddress,
   };
 };
 
+// --- Utility functions ---
+
 function parseSignedInt(hex: string): number {
   const value = BigInt('0x' + hex);
-  // Check if negative (highest bit set in 256-bit number)
   if (value >= BigInt(2) ** BigInt(255)) {
     return Number(value - BigInt(2) ** BigInt(256));
   }
   return Number(value);
 }
 
-// Encode collect function call
 function encodeCollectCall(params: {
   tokenId: bigint;
   recipient: string;
   amount0Max: bigint;
   amount1Max: bigint;
 }): string {
-  // Function selector for collect((uint256,address,uint128,uint128))
   const selector = '0xfc6f7865';
-  
   const tokenId = params.tokenId.toString(16).padStart(64, '0');
   const recipient = params.recipient.slice(2).toLowerCase().padStart(64, '0');
   const amount0Max = params.amount0Max.toString(16).padStart(64, '0');
   const amount1Max = params.amount1Max.toString(16).padStart(64, '0');
-  
   return selector + tokenId + recipient + amount0Max + amount1Max;
 }
 
-// Encode decreaseLiquidity function call
 function encodeDecreaseLiquidityCall(params: {
   tokenId: bigint;
   liquidity: bigint;
@@ -497,19 +526,15 @@ function encodeDecreaseLiquidityCall(params: {
   amount1Min: bigint;
   deadline: bigint;
 }): string {
-  // Function selector for decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))
   const selector = '0x0c49ccbe';
-  
   const tokenId = params.tokenId.toString(16).padStart(64, '0');
   const liquidity = params.liquidity.toString(16).padStart(64, '0');
   const amount0Min = params.amount0Min.toString(16).padStart(64, '0');
   const amount1Min = params.amount1Min.toString(16).padStart(64, '0');
   const deadline = params.deadline.toString(16).padStart(64, '0');
-  
   return selector + tokenId + liquidity + amount0Min + amount1Min + deadline;
 }
 
-// Encode increaseLiquidity function call
 function encodeIncreaseLiquidityCall(params: {
   tokenId: bigint;
   amount0Desired: bigint;
@@ -518,22 +543,17 @@ function encodeIncreaseLiquidityCall(params: {
   amount1Min: bigint;
   deadline: bigint;
 }): string {
-  // Function selector for increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))
   const selector = '0x219f5d17';
-  
   const tokenId = params.tokenId.toString(16).padStart(64, '0');
   const amount0Desired = params.amount0Desired.toString(16).padStart(64, '0');
   const amount1Desired = params.amount1Desired.toString(16).padStart(64, '0');
   const amount0Min = params.amount0Min.toString(16).padStart(64, '0');
   const amount1Min = params.amount1Min.toString(16).padStart(64, '0');
   const deadline = params.deadline.toString(16).padStart(64, '0');
-  
   return selector + tokenId + amount0Desired + amount1Desired + amount0Min + amount1Min + deadline;
 }
 
-// Encode ERC20 approve function call
 function encodeApproveCall(spender: string, amount: bigint): string {
-  // Function selector for approve(address,uint256)
   const selector = '0x095ea7b3';
   const spenderPadded = spender.slice(2).toLowerCase().padStart(64, '0');
   const amountPadded = amount.toString(16).padStart(64, '0');
