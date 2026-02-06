@@ -599,7 +599,10 @@ const Api = () => {
                   title="Get Token Prices"
                   method="POST"
                   endpoint={`${baseUrl}/get-swap-quote`}
-                  description="Fetches current USD prices for all supported tokens on Base network. Prices are sourced from CoinGecko."
+                  description="Fetches current USD prices for all supported tokens. Use chain-specific quote endpoints for non-Base networks (e.g. get-pancakeswap-quote for BSC, get-traderjoe-quote for Avalanche, get-sunswap-quote for TRON, get-neo-quote for NEO)."
+                  parameters={[
+                    { name: "action", type: "string", required: true, description: 'Must be "prices"' },
+                  ]}
                   requestBody={`{
   "action": "prices"
 }`}
@@ -609,14 +612,11 @@ const Api = () => {
     "WETH": 2986.65,
     "USDC": 0.999845,
     "BRETT": 0.00018221,
-    "DEGEN": 0.0089,
-    "AERO": 0.512766,
-    // ... 50+ tokens
+    // ... chain-specific tokens
   },
   "tokens": {
     "ETH": "0x0000000000000000000000000000000000000000",
     "WETH": "0x4200000000000000000000000000000000000006",
-    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     // ... token addresses
   }
 }`}
