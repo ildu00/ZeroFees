@@ -11,7 +11,7 @@ const Index = () => {
       <BackgroundEffects />
       <Header />
       
-      <main className="relative z-10 pt-28 pb-20 px-6">
+      <main className="relative z-10 pt-28 px-6">
         <div className="max-w-7xl mx-auto">
           {/* Hero Section */}
           <div className="text-center mb-12 animate-fade-in">
