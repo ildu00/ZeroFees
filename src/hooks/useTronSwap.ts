@@ -262,7 +262,7 @@ export const useTronSwap = () => {
         );
         
         const signedTx = await tronWeb.trx.sign(transaction);
-        const result = await tronWeb.trx.sendRawTransaction(signedTx);
+        const result = await tronWeb.trx.sendRawTransaction(signedTx) as any;
         txHash = result.txid || result.transaction?.txID;
       }
 
