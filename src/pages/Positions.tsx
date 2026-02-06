@@ -170,6 +170,7 @@ const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting,
 
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
+  const { currentChain } = useChain();
   const { positions, loading, collecting, removing, increasing, error, refetch, collectFees, removeLiquidity, increaseLiquidity } = usePositions();
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
