@@ -211,6 +211,9 @@ const SwapCard = () => {
     if (currentChain.id === 'bsc') {
       return BNB_TOKENS[symbol as keyof typeof BNB_TOKENS];
     }
+    if (currentChain.id === 'avalanche') {
+      return AVAX_TOKENS[symbol as keyof typeof AVAX_TOKENS];
+    }
     return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
   }, [chainType, currentChain.id]);
 
