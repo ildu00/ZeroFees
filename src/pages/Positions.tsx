@@ -314,6 +314,7 @@ const Positions = () => {
                       isCollecting={collecting === position.tokenId}
                       isRemoving={removing === position.tokenId}
                       isIncreasing={increasing === position.tokenId}
+                      blockExplorerUrl={currentChain.blockExplorer}
                     />
                   ))}
                 </div>
