@@ -11,3 +11,21 @@ verify_jwt = false
 
 [functions.get-pancakeswap-quote]
 verify_jwt = false
+
+[functions.get-neo-quote]
+verify_jwt = false
+
+[functions.get-traderjoe-quote]
+verify_jwt = false
+
+[functions.get-sunswap-quote]
+verify_jwt = false
+
+[functions.get-token-price]
+verify_jwt = false
+
+[functions.get-chain-positions]
+verify_jwt = false
+
+[functions.get-wallet-transactions]
+verify_jwt = false
