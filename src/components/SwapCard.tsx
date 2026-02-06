@@ -193,6 +193,9 @@ const SwapCard = () => {
     if (chainType === 'tron') {
       return TRON_TOKENS[symbol as keyof typeof TRON_TOKENS];
     }
+    if (chainType === 'neo') {
+      return NEO_SWAP_TOKENS[symbol as keyof typeof NEO_SWAP_TOKENS];
+    }
     return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
   }, [chainType]);
 
