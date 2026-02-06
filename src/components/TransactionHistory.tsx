@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ExternalLink, CheckCircle, Clock, XCircle, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWalletContext } from '@/contexts/WalletContext';
+import { useChain } from '@/contexts/ChainContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
