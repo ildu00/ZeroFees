@@ -500,7 +500,7 @@ const SwapCard = () => {
             onClick={connect}
             disabled={isConnecting}
           >
-            {isConnecting ? 'Connecting...' : `Connect ${chainType === 'tron' ? 'TronLink' : 'Wallet'} to Swap`}
+            {isConnecting ? 'Connecting...' : `Connect ${chainType === 'tron' ? 'TronLink' : chainType === 'neo' ? 'NeoLine' : 'Wallet'} to Swap`}
           </Button>
         )}
 
