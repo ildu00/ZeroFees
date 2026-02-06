@@ -106,12 +106,12 @@ const WalletButton = () => {
     <Button 
       variant="glass" 
       size="sm" 
-      className="gap-1 sm:gap-2 px-2 sm:px-3"
+      className="gap-1 sm:gap-2 px-2 sm:px-3 h-8 sm:h-9"
       onClick={connect}
       disabled={isConnecting}
     >
       <Wallet className="w-4 h-4" />
-      <span className="hidden sm:inline">
+      <span className="hidden md:inline text-xs sm:text-sm">
         {getConnectText()}
       </span>
     </Button>
