@@ -55,6 +55,7 @@ const SwapCard = () => {
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
   const bnbSwap = useBnbSwap();
+  const avaxSwap = useAvalancheSwap();
   
   // Select the right swap hook
   const swap = useMemo(() => {
