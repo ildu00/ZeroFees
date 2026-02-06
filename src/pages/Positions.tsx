@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Footer from "@/components/Footer";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useChain } from "@/contexts/ChainContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus, Plus } from "lucide-react";

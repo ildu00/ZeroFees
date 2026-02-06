@@ -103,7 +103,7 @@ const PoolsList = () => {
       {/* Pools Header with Search and Filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold">Liquidity Pools on Base</h2>
+          <h2 className="text-xl font-semibold">Liquidity Pools on {currentChain.shortName}</h2>
           <Button
             variant="ghost"
             size="icon"
