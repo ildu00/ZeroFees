@@ -137,8 +137,8 @@ export const useAddLiquidityTron = () => {
       let sortedAmount1Min = amount1Min;
 
       // TronWeb address comparison
-      const addr0Hex = tronWeb.address?.toHex?.(token0Address) || token0Address;
-      const addr1Hex = tronWeb.address?.toHex?.(token1Address) || token1Address;
+      const addr0Hex = (tronWeb as any).address?.toHex?.(token0Address) || token0Address;
+      const addr1Hex = (tronWeb as any).address?.toHex?.(token1Address) || token1Address;
       
       if (addr0Hex.toLowerCase() > addr1Hex.toLowerCase()) {
         [sortedToken0, sortedToken1] = [sortedToken1, sortedToken0];
