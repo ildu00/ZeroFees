@@ -51,7 +51,7 @@ const SwapCard = () => {
   const { currentChain } = useChain();
   
   // Use appropriate swap hook based on chain type
-  const evmSwap = useSwap();
+  const evmSwapResult = useSwap();
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
   const bnbSwap = useBnbSwap();
