@@ -99,9 +99,19 @@ export const AVALANCHE_TOKENS: Token[] = [
   { symbol: 'AVAX', name: 'Avalanche', address: '0x0000000000000000000000000000000000000000', decimals: 18, icon: '🔺', coingeckoId: 'avalanche-2' },
   { symbol: 'WAVAX', name: 'Wrapped AVAX', address: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', decimals: 18, icon: '🔺', coingeckoId: 'avalanche-2' },
   { symbol: 'USDC', name: 'USD Coin', address: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', decimals: 6, icon: '💵', coingeckoId: 'usd-coin' },
+  { symbol: 'USDC.e', name: 'USD Coin (Bridged)', address: '0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664', decimals: 6, icon: '💵', coingeckoId: 'usd-coin' },
   { symbol: 'USDT', name: 'Tether USD', address: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7', decimals: 6, icon: '💲', coingeckoId: 'tether' },
+  { symbol: 'USDT.e', name: 'Tether USD (Bridged)', address: '0xc7198437980c041c805A1EDcbA50c1Ce5db95118', decimals: 6, icon: '💲', coingeckoId: 'tether' },
   { symbol: 'JOE', name: 'Trader Joe', address: '0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd', decimals: 18, icon: '🦜', coingeckoId: 'joe' },
   { symbol: 'WETH.e', name: 'Wrapped Ether', address: '0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB', decimals: 18, icon: '⟠', coingeckoId: 'ethereum' },
+  { symbol: 'WBTC.e', name: 'Wrapped Bitcoin', address: '0x50b7545627a5162F82A992c33b87aDc75187B218', decimals: 8, icon: '₿', coingeckoId: 'wrapped-bitcoin' },
+  { symbol: 'DAI.e', name: 'Dai Stablecoin', address: '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70', decimals: 18, icon: '🔶', coingeckoId: 'dai' },
+  { symbol: 'LINK.e', name: 'Chainlink', address: '0x5947BB275c521040051D82396e4B9d3f7694cB02', decimals: 18, icon: '🔗', coingeckoId: 'chainlink' },
+  { symbol: 'AAVE.e', name: 'Aave', address: '0x63a72806098Bd3D9520cC43356dD78afe5D386D9', decimals: 18, icon: '👻', coingeckoId: 'aave' },
+  { symbol: 'sAVAX', name: 'Staked AVAX', address: '0x2b2C81e08f1Af8835a78Bb2A90AE924ACE0eA4bE', decimals: 18, icon: '❄️', coingeckoId: 'benqi-liquid-staked-avax' },
+  { symbol: 'QI', name: 'BENQI', address: '0x8729438EB15e2C8B576fCc6AeCdA6A148776C0F5', decimals: 18, icon: '🔷', coingeckoId: 'benqi' },
+  { symbol: 'PNG', name: 'Pangolin', address: '0x60781C2586D68229fde47564546784ab3fACA982', decimals: 18, icon: '🐧', coingeckoId: 'pangolin' },
+  { symbol: 'GMX', name: 'GMX', address: '0x62edc0692BD897D2295872a9FFCac5425011c661', decimals: 18, icon: '📊', coingeckoId: 'gmx' },
 ];
 
 // TRON tokens (TRC-20)
