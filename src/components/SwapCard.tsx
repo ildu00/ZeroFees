@@ -7,7 +7,7 @@ import SlippageSettingsModal from "./SlippageSettingsModal";
 import SwapConfirmationModal from "./SwapConfirmationModal";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useChain } from "@/contexts/ChainContext";
-import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
+import { useSwap } from "@/hooks/useSwap";
 import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
 import { useNeoSwap, NEO_SWAP_TOKENS } from "@/hooks/useNeoSwap";
 import { useBnbSwap, BNB_TOKENS } from "@/hooks/useBnbSwap";
@@ -51,7 +51,7 @@ const SwapCard = () => {
   const { currentChain } = useChain();
   
   // Use appropriate swap hook based on chain type
-  const evmSwap = useSwap();
+  const evmSwapResult = useSwap();
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
   const bnbSwap = useBnbSwap();
@@ -119,9 +119,9 @@ const SwapCard = () => {
     if (currentChain.id === 'avalanche') {
       return avaxSwap;
     }
-    // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
-    return evmSwap;
-  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap, avaxSwap]);
+    // Default: EVM swap (Base, Ethereum, Arbitrum, Polygon, Optimism)
+    return evmSwapResult;
+  }, [chainType, currentChain.id, evmSwapResult, tronSwap, neoSwap, bnbSwap, avaxSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
@@ -200,6 +200,9 @@ const SwapCard = () => {
   const [quoteKey, setQuoteKey] = useState(0);
   const isEstimate = !quote || !quote.amountOut || isLoadingQuote;
 
+  // Dynamic EVM tokens from the swap hook
+  const evmTokens = evmSwapResult.TOKENS;
+
   // Get token config for current chain
   const getTokenConfig = useCallback((symbol: string) => {
     if (chainType === 'tron') {
@@ -214,8 +217,8 @@ const SwapCard = () => {
     if (currentChain.id === 'avalanche') {
       return AVAX_TOKENS[symbol as keyof typeof AVAX_TOKENS];
     }
-    return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
-  }, [chainType, currentChain.id]);
+    return evmTokens[symbol];
+  }, [chainType, currentChain.id, evmTokens]);
 
   // Calculate display value
   const calculateToValue = useCallback(() => {

@@ -538,10 +538,10 @@ const Api = () => {
                     <tbody>
                       {[
                         { id: "base", name: "Base", icon: "🔵", dex: "Uniswap V3", swaps: true, pools: true },
-                        { id: "ethereum", name: "Ethereum", icon: "⟠", dex: "Uniswap V3", swaps: false, pools: true },
-                        { id: "arbitrum", name: "Arbitrum One", icon: "🔷", dex: "Uniswap V3", swaps: false, pools: true },
-                        { id: "polygon", name: "Polygon", icon: "💜", dex: "Uniswap V3", swaps: false, pools: true },
-                        { id: "optimism", name: "Optimism", icon: "🔴", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "ethereum", name: "Ethereum", icon: "⟠", dex: "Uniswap V3", swaps: true, pools: true },
+                        { id: "arbitrum", name: "Arbitrum One", icon: "🔷", dex: "Uniswap V3", swaps: true, pools: true },
+                        { id: "polygon", name: "Polygon", icon: "💜", dex: "Uniswap V3", swaps: true, pools: true },
+                        { id: "optimism", name: "Optimism", icon: "🔴", dex: "Uniswap V3", swaps: true, pools: true },
                         { id: "bsc", name: "BNB Smart Chain", icon: "🟡", dex: "PancakeSwap", swaps: true, pools: true },
                         { id: "avalanche", name: "Avalanche", icon: "🔺", dex: "Trader Joe", swaps: true, pools: true },
                         { id: "tron", name: "TRON", icon: "♦️", dex: "SunSwap", swaps: true, pools: true },
