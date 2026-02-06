@@ -118,8 +118,8 @@ const NetworkSelector = () => {
                       {chain.type !== 'evm' && (
                         <span className={cn(
                           "text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase",
-                          chain.type === 'tron' && "bg-red-500/20 text-red-400",
-                          chain.type === 'neo' && "bg-green-500/20 text-green-400"
+                          chain.type === 'tron' && "bg-destructive/20 text-destructive",
+                          chain.type === 'neo' && "bg-primary/20 text-primary"
                         )}>
                           {chain.type}
                         </span>
