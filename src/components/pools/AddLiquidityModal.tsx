@@ -114,11 +114,11 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
   useEffect(() => {
     if (pool) {
       // Find tokens from the pool by symbol only (pool doesn't have address)
-      const t0 = tokens.find(t => t.symbol === pool.token0.symbol);
-      const t1 = tokens.find(t => t.symbol === pool.token1.symbol);
+      const t0 = allAvailableTokens.find(t => t.symbol === pool.token0.symbol);
+      const t1 = allAvailableTokens.find(t => t.symbol === pool.token1.symbol);
       
-      setToken0(t0 || tokens.find(t => t.symbol === "WETH") || tokens[0]);
-      setToken1(t1 || tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken0(t0 || allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
+      setToken1(t1 || allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
       
       // Set fee tier from pool if available
       if (pool.feeTier) {
@@ -129,10 +129,10 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
       }
     } else {
       // Default tokens
-      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
-      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken0(allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
+      setToken1(allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
     }
-  }, [pool, tokens, open]);
+  }, [pool, allAvailableTokens, open]);
 
   // Fetch current price and calculate price range
   const fetchPriceAndSetRange = useCallback(async () => {
