@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Droplets, Plus, RefreshCw, AlertCircle, Search, ArrowUpDown } from "lucide-react";
+import { TrendingUp, Droplets, Plus, RefreshCw, AlertCircle, Search, ArrowUpDown, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 import PoolCard from "./PoolCard";
 import AddLiquidityModal from "./AddLiquidityModal";
 import { useUniswapPools, Pool } from "@/hooks/useUniswapPools";
+import { useChain } from "@/contexts/ChainContext";
 
 const formatCurrency = (value: number) => {
   if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;
