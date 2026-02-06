@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useAppKitWallet } from '@/hooks/useAppKitWallet';
 import { useTronLink } from '@/hooks/useTronLink';
+import { useNeoLine } from '@/hooks/useNeoLine';
 import { useChain } from '@/contexts/ChainContext';
 import type { Eip1193Provider } from 'ethers';
 
