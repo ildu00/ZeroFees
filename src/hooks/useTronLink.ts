@@ -158,7 +158,7 @@ export const useTronLink = () => {
   }, []);
 
   // Disconnect (TronLink doesn't have native disconnect, so we just reset state)
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     setState(prev => ({
       ...prev,
       isConnected: false,
