@@ -53,6 +53,7 @@ const SwapCard = () => {
   const evmSwap = useSwap();
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
+  const bnbSwap = useBnbSwap();
   
   // Select the right swap hook
   const swap = useMemo(() => {
@@ -108,9 +109,13 @@ const SwapCard = () => {
         },
       };
     }
-    // Default: EVM swap
+    // BSC / BNB Chain → PancakeSwap
+    if (currentChain.id === 'bsc') {
+      return bnbSwap;
+    }
+    // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
     return evmSwap;
-  }, [chainType, evmSwap, tronSwap, neoSwap]);
+  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
