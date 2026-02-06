@@ -171,7 +171,7 @@ const TransactionHistory = () => {
         <div className="text-center py-12 text-muted-foreground">
           <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No swap transactions found</p>
-          <p className="text-sm">Your DEX swap history on Base will appear here</p>
+          <p className="text-sm">Your DEX swap history on {currentChain.name} will appear here</p>
         </div>
       ) : (
         <div className="space-y-3">
