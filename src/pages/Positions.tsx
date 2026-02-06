@@ -159,7 +159,7 @@ const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting,
           variant="glass" 
           size="icon" 
           className="shrink-0"
-          onClick={() => window.open(`https://basescan.org/nft/0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1/${position.tokenId}`, '_blank')}
+          onClick={() => window.open(`${currentChain.blockExplorer}/nft/0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1/${position.tokenId}`, '_blank')}
         >
           <ExternalLink className="w-4 h-4" />
         </Button>
