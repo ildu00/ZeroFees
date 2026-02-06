@@ -48,13 +48,21 @@ const shortenHash = (hash: string): string => {
 };
 
 const TransactionHistory = () => {
-  const { address, isConnected } = useWalletContext();
+  const { address, isConnected, blockExplorerUrl, chainType } = useWalletContext();
+  const { currentChain } = useChain();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = async () => {
     if (!address) return;
+    
+    // Only fetch for EVM chains for now
+    if (chainType !== 'evm') {
+      setTransactions([]);
+      setError('Transaction history not available for this network yet');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
