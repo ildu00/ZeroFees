@@ -767,7 +767,7 @@ const Api = () => {
 
               <div className="glass-card p-6">
                 <p className="text-muted-foreground mb-4">
-                  The following tokens are supported for swaps on Base network:
+                  The following tokens are supported for swaps on Base network. Each chain has its own set of native tokens — refer to the Supported Chains table above.
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
