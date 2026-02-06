@@ -7,6 +7,7 @@ const corsHeaders = {
 
 // Map token symbols to CoinGecko IDs
 const GECKO_IDS: Record<string, string> = {
+  // EVM tokens
   'WETH': 'ethereum',
   'ETH': 'ethereum',
   'USDC': 'usd-coin',
@@ -20,6 +21,19 @@ const GECKO_IDS: Record<string, string> = {
   'BRETT': 'brett',
   'DEGEN': 'degen-base',
   'VIRTUAL': 'virtual-protocol',
+  // TRON tokens
+  'TRX': 'tron',
+  'WTRX': 'tron',
+  'BTT': 'bittorrent',
+  'WIN': 'winklink',
+  'JST': 'just',
+  'SUN': 'sun-token',
+  'TUSD': 'true-usd',
+  'USDJ': 'usdj',
+  // NEO tokens
+  'NEO': 'neo',
+  'GAS': 'gas',
+  'FLM': 'flamingo-finance',
 };
 
 serve(async (req) => {
