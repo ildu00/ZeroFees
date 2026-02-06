@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Droplets, Plus, RefreshCw, AlertCircle, Search, ArrowUpDown } from "lucide-react";
+import { TrendingUp, Droplets, Plus, RefreshCw, AlertCircle, Search, ArrowUpDown, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 import PoolCard from "./PoolCard";
 import AddLiquidityModal from "./AddLiquidityModal";
 import { useUniswapPools, Pool } from "@/hooks/useUniswapPools";
+import { useChain } from "@/contexts/ChainContext";
 
 const formatCurrency = (value: number) => {
   if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;
@@ -23,6 +24,7 @@ const formatCurrency = (value: number) => {
 type SortOption = 'tvl' | 'apr' | 'volume';
 
 const PoolsList = () => {
+  const { currentChain } = useChain();
   const { pools, loading, error, refetch } = useUniswapPools();
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -101,7 +103,7 @@ const PoolsList = () => {
       {/* Pools Header with Search and Filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold">Liquidity Pools on Base</h2>
+          <h2 className="text-xl font-semibold">Liquidity Pools on {currentChain.shortName}</h2>
           <Button
             variant="ghost"
             size="icon"

@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import BackgroundEffects from "@/components/BackgroundEffects";
 import Footer from "@/components/Footer";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useChain } from "@/contexts/ChainContext";
 import { usePositions, Position } from "@/hooks/usePositions";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Wallet, ExternalLink, TrendingUp, Droplets, AlertCircle, Loader2, Minus, Plus } from "lucide-react";
@@ -29,9 +30,10 @@ interface PositionCardProps {
   isCollecting: boolean;
   isRemoving: boolean;
   isIncreasing: boolean;
+  blockExplorerUrl: string;
 }
 
-const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting, isRemoving, isIncreasing }: PositionCardProps) => {
+const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting, isRemoving, isIncreasing, blockExplorerUrl }: PositionCardProps) => {
   const hasFees = position.tokensOwed0 !== '0' || position.tokensOwed1 !== '0';
   const isLoading = isCollecting || isRemoving || isIncreasing;
   
@@ -158,7 +160,7 @@ const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting,
           variant="glass" 
           size="icon" 
           className="shrink-0"
-          onClick={() => window.open(`https://basescan.org/nft/0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1/${position.tokenId}`, '_blank')}
+          onClick={() => window.open(`${blockExplorerUrl}/nft/0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1/${position.tokenId}`, '_blank')}
         >
           <ExternalLink className="w-4 h-4" />
         </Button>
@@ -169,6 +171,7 @@ const PositionCard = ({ position, onCollect, onRemove, onIncrease, isCollecting,
 
 const Positions = () => {
   const { isConnected, connect } = useWalletContext();
+  const { currentChain } = useChain();
   const { positions, loading, collecting, removing, increasing, error, refetch, collectFees, removeLiquidity, increaseLiquidity } = usePositions();
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
@@ -212,7 +215,7 @@ const Positions = () => {
               <span className="text-gradient">Positions</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              View and manage your liquidity positions on Base
+              View and manage your liquidity positions on {currentChain.shortName}
             </p>
           </div>
 
@@ -311,6 +314,7 @@ const Positions = () => {
                       isCollecting={collecting === position.tokenId}
                       isRemoving={removing === position.tokenId}
                       isIncreasing={increasing === position.tokenId}
+                      blockExplorerUrl={currentChain.blockExplorer}
                     />
                   ))}
                 </div>
