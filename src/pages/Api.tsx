@@ -494,7 +494,7 @@ const Api = () => {
               <span className="text-gradient">API Reference</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Complete API documentation for integrating with ZERO FEES DeFi services on Base network.
+              Complete API documentation for integrating with ZERO FEES DeFi services across 9 blockchain networks.
             </p>
           </div>
 
