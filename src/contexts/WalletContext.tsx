@@ -29,6 +29,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { currentChain } = useChain();
   const evmWallet = useAppKitWallet();
   const tronWallet = useTronLink();
+  const neoWallet = useNeoLine();
 
   // Select the appropriate wallet based on current chain type
   const wallet = useMemo((): WalletContextType => {
@@ -52,22 +53,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (chainType === 'neo') {
-      // NEO wallet integration placeholder
-      // For now, return disconnected state
       return {
-        isConnected: false,
-        address: null,
-        balance: null,
-        isConnecting: false,
-        error: 'NEO wallet support coming soon',
-        formattedAddress: null,
-        connect: async () => {
-          window.open('https://neonwallet.com/', '_blank');
-        },
-        disconnect: async () => {},
+        isConnected: neoWallet.isConnected,
+        address: neoWallet.address,
+        balance: neoWallet.balance,
+        isConnecting: neoWallet.isConnecting,
+        error: neoWallet.error,
+        formattedAddress: neoWallet.formattedAddress,
+        connect: neoWallet.connect,
+        disconnect: neoWallet.disconnect,
         walletProvider: undefined,
         chainType: 'neo',
-        nativeCurrencySymbol: currentChain.nativeCurrency.symbol,
+        nativeCurrencySymbol: 'GAS', // NEO uses GAS for transactions
         blockExplorerUrl: currentChain.blockExplorer,
       };
     }
