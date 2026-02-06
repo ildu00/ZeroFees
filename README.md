@@ -1,43 +1,58 @@
-# BaseSwap - Decentralized Exchange on Base Network
+# ZeroFees — Multi-Chain Decentralized Exchange
 
-A modern, user-friendly decentralized exchange (DEX) built on the Base network, offering token swaps, liquidity provision, and position management with a sleek interface.
+A modern, multi-chain decentralized exchange (DEX) aggregator supporting token swaps, liquidity provision, and position management across 9 blockchain networks.
+
+**Live:** [zerofees.online](https://zerofees.online)
 
 ## 🚀 Features
 
 ### Token Swapping
-- **Instant Swaps**: Exchange tokens seamlessly on the Base network
-- **Best Price Routing**: Automatically finds the optimal swap route for best prices
-- **Slippage Protection**: Configurable slippage tolerance to protect against price movements
-- **Real-time Quotes**: Live price quotes with USD value estimation
-- **Transaction History**: Track all your swap transactions
+- **Multi-chain swaps** across 9 networks with automatic DEX routing
+- **Best price routing** via Uniswap V3, PancakeSwap, Trader Joe, SunSwap, and Flamingo
+- **Configurable slippage** tolerance to protect against price movements
+- **Real-time quotes** with USD value estimation
+- **Transaction history** tracking
 
 ### Liquidity Pools
-- **Pool Discovery**: Browse and explore available liquidity pools
-- **Add Liquidity**: Provide liquidity to earn trading fees
-- **Pool Analytics**: View TVL, 24h volume, fees, and APR for each pool
-- **Multiple Fee Tiers**: Support for various fee tiers (0.01%, 0.05%, 0.3%, 1%)
+- **Pool discovery** — browse pools with TVL, 24h volume, fees, and APR
+- **Add liquidity** — provide liquidity across multiple fee tiers (0.01%, 0.05%, 0.3%, 1%)
+- **Multiple LP types** — Simple LP, Tick-based (Uniswap V3), and Bin-based (Trader Joe)
 
 ### Position Management
-- **Active Positions**: View and manage your liquidity positions
-- **Increase Liquidity**: Add more liquidity to existing positions
-- **Remove Liquidity**: Withdraw liquidity with customizable percentage
-- **Collect Fees**: Claim accumulated trading fees from your positions
+- **View & manage** active liquidity positions
+- **Increase / remove** liquidity with customizable percentage
+- **Collect fees** from accumulated trading rewards
 
 ### Wallet Integration
-- **WalletConnect**: Connect via WalletConnect protocol
-- **MetaMask**: Native MetaMask support on mobile and desktop
-- **Coinbase Wallet**: Coinbase Wallet integration
-- **Multi-wallet Support**: Connect with various Web3 wallets
+- **WalletConnect** — connect via Reown AppKit (WalletConnect v2)
+- **MetaMask** — native support on mobile & desktop
+- **TronLink** — for TRON network
+- **NeoLine** — for NEO N3 network
+- **Coinbase Wallet** and other Web3 wallets
+
+## 🌐 Supported Networks
+
+| Network | Chain ID | DEX | Native Token |
+|---------|----------|-----|-------------|
+| **Base** | 8453 | Uniswap V3 | ETH |
+| **Ethereum** | 1 | Uniswap V3 | ETH |
+| **Arbitrum One** | 42161 | Uniswap V3 | ETH |
+| **Polygon** | 137 | Uniswap V3 | MATIC |
+| **Optimism** | 10 | Uniswap V3 | ETH |
+| **BNB Smart Chain** | 56 | PancakeSwap | BNB |
+| **Avalanche** | 43114 | Trader Joe | AVAX |
+| **TRON** | — | SunSwap | TRX |
+| **NEO N3** | — | Flamingo | NEO |
 
 ## 🛠 Technology Stack
 
-- **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS with custom design system
-- **UI Components**: shadcn/ui with Radix primitives
-- **Web3**: ethers.js v6 + Reown AppKit (WalletConnect)
-- **Backend**: Supabase Edge Functions
-- **State Management**: React Query (TanStack Query)
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS with custom design tokens
+- **UI Components:** shadcn/ui + Radix primitives
+- **Web3:** ethers.js v6 + Reown AppKit
+- **Backend:** Lovable Cloud (Edge Functions)
+- **State Management:** TanStack Query (React Query)
+- **Animations:** Framer Motion-ready
 
 ## 📁 Project Structure
 
@@ -49,99 +64,86 @@ src/
 │   ├── positions/       # Position management components
 │   ├── SwapCard.tsx     # Main swap interface
 │   ├── TokenInput.tsx   # Token selection & amount input
+│   ├── NetworkSelector  # Multi-chain network switcher
 │   └── ...
 ├── hooks/
-│   ├── useSwap.ts       # Swap logic and state
-│   ├── useAppKitWallet.ts # Wallet connection
-│   ├── usePositions.ts  # Position management
-│   └── useUniswapPools.ts # Pool data fetching
+│   ├── useSwap.ts           # Base swap logic
+│   ├── useAvalancheSwap.ts  # Avalanche (Trader Joe) swap
+│   ├── useBnbSwap.ts        # BSC (PancakeSwap) swap
+│   ├── useTronSwap.ts       # TRON (SunSwap) swap
+│   ├── useNeoSwap.ts        # NEO (Flamingo) swap
+│   ├── useAppKitWallet.ts   # EVM wallet connection
+│   ├── useTronLink.ts       # TronLink wallet
+│   ├── useNeoLine.ts        # NeoLine wallet
+│   ├── usePositions.ts      # Position management
+│   └── useUniswapPools.ts   # Pool data fetching
 ├── pages/
-│   ├── Index.tsx        # Home page with swap
+│   ├── Index.tsx        # Home — swap interface
 │   ├── Pools.tsx        # Liquidity pools listing
 │   ├── Positions.tsx    # User positions
-│   └── Docs.tsx         # Documentation
+│   ├── Docs.tsx         # Documentation
+│   ├── Api.tsx          # API access page
+│   └── Changelog.tsx    # Release history
 ├── config/
-│   └── appkit.ts        # WalletConnect configuration
+│   ├── chains.ts        # Chain configurations
+│   ├── tokens.ts        # Token lists per chain
+│   ├── appkit.ts        # WalletConnect config
+│   └── liquidityTypes.ts
 └── contexts/
-    └── WalletContext.tsx # Wallet state provider
+    ├── WalletContext.tsx # Wallet state provider
+    └── ChainContext.tsx  # Active chain provider
 ```
 
-## 🔧 Supported Tokens
+## ⚙️ Edge Functions
 
-The DEX supports major tokens on Base network:
-- **ETH** - Native Ether
-- **WETH** - Wrapped Ether
-- **USDC** - USD Coin
-- **USDbC** - USD Base Coin
-- **DAI** - Dai Stablecoin
-- **AERO** - Aerodrome Finance
-- **BRETT** - Brett memecoin
-- **TOSHI** - Toshi memecoin
+| Function | Purpose |
+|----------|---------|
+| `get-swap-quote` | Uniswap V3 swap quotes (Base, ETH, ARB, MATIC, OP) |
+| `get-pancakeswap-quote` | PancakeSwap quotes (BSC) |
+| `get-traderjoe-quote` | Trader Joe quotes (Avalanche) |
+| `get-sunswap-quote` | SunSwap quotes (TRON) |
+| `get-neo-quote` | Flamingo quotes (NEO) |
+| `get-uniswap-pools` | Pool data for all supported chains |
+| `get-chain-positions` | User liquidity positions |
+| `get-token-price` | Token price lookups |
+| `get-wallet-transactions` | Transaction history |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - npm or bun
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone <YOUR_GIT_URL>
-
-# Navigate to project directory
 cd <YOUR_PROJECT_NAME>
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-### Environment Variables
+## 🔐 Security
 
-The project uses Lovable Cloud (Supabase) for backend services. Environment variables are automatically configured.
+- **Non-custodial** — users maintain full control of funds
+- **Slippage protection** — configurable tolerance per swap
+- **Transaction confirmation** — review details before signing
+- **Secure wallet connection** — WalletConnect v2 protocol
 
-## 🔐 Security Features
+## 📱 Mobile
 
-- **Non-custodial**: Users maintain full control of their funds
-- **Slippage Protection**: Configurable slippage tolerance
-- **Transaction Confirmation**: Review transactions before signing
-- **Secure Wallet Connection**: Industry-standard WalletConnect protocol
-
-## 📱 Mobile Support
-
-- Responsive design for all screen sizes
-- Native mobile wallet support via deep linking
-- MetaMask mobile app integration
-- WalletConnect QR code scanning
-
-## 🌐 Networks
-
-Currently supports:
-- **Base Mainnet** (Chain ID: 8453)
-
-## 📖 API Integration
-
-The DEX integrates with:
-- **Uniswap V3** - For swap quotes and liquidity pools
-- **0x Protocol** - For optimal swap routing
-- **Base RPC** - For blockchain interactions
-
-## 🛡 Edge Functions
-
-Backend functionality powered by Supabase Edge Functions:
-- `get-swap-quote` - Fetches optimal swap quotes
-- `get-uniswap-pools` - Retrieves pool data
-- `get-wallet-transactions` - Fetches transaction history
+- Fully responsive design
+- Native mobile wallet deep linking
+- MetaMask & TronLink mobile app support
+- WalletConnect QR scanning
 
 ## 📄 License
 
-This project is proprietary software.
+Proprietary software.
 
 ## 🔗 Links
 
 - [Live App](https://zerofees.online)
 - [Documentation](https://zerofees.online/docs)
+- [API](https://zerofees.online/api)
+- [Changelog](https://zerofees.online/changelog)
