@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "./NavLink";
 import WalletButton from "./WalletButton";
+import NetworkSelector from "./NetworkSelector";
 import { Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -50,6 +51,7 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          <NetworkSelector />
           <WalletButton />
           <Button
             variant="ghost"

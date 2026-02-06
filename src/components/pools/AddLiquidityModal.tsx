@@ -87,8 +87,8 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     }
   }, [currentPrice, lastEditedAmount, amount0, amount1, calculateLinkedAmount]);
 
-  // Token selection state
-  const [tokens, setTokens] = useState<Token[]>(allTokens);
+  // Custom tokens state (imported by user)
+  const [customTokens, setCustomTokens] = useState<Token[]>([]);
   const [token0, setToken0] = useState<Token | null>(null);
   const [token1, setToken1] = useState<Token | null>(null);
   const [showToken0Select, setShowToken0Select] = useState(false);
@@ -100,26 +100,25 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
     if (stored) {
       try {
         const imported = JSON.parse(stored) as Token[];
-        const existingAddresses = allTokens.map(t => t.address.toLowerCase());
-        const newTokens = imported.filter(t => !existingAddresses.includes(t.address.toLowerCase()));
-        if (newTokens.length > 0) {
-          setTokens([...allTokens, ...newTokens]);
-        }
+        setCustomTokens(imported);
       } catch (e) {
         console.error("Failed to load imported tokens", e);
       }
     }
   }, []);
 
+  // Combined tokens for lookup (allTokens from export + custom)
+  const allAvailableTokens = [...allTokens, ...customTokens];
+
   // Initialize tokens based on pool or defaults
   useEffect(() => {
     if (pool) {
       // Find tokens from the pool by symbol only (pool doesn't have address)
-      const t0 = tokens.find(t => t.symbol === pool.token0.symbol);
-      const t1 = tokens.find(t => t.symbol === pool.token1.symbol);
+      const t0 = allAvailableTokens.find(t => t.symbol === pool.token0.symbol);
+      const t1 = allAvailableTokens.find(t => t.symbol === pool.token1.symbol);
       
-      setToken0(t0 || tokens.find(t => t.symbol === "WETH") || tokens[0]);
-      setToken1(t1 || tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken0(t0 || allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
+      setToken1(t1 || allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
       
       // Set fee tier from pool if available
       if (pool.feeTier) {
@@ -130,10 +129,10 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
       }
     } else {
       // Default tokens
-      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
-      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken0(allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
+      setToken1(allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
     }
-  }, [pool, tokens, open]);
+  }, [pool, allAvailableTokens, open]);
 
   // Fetch current price and calculate price range
   const fetchPriceAndSetRange = useCallback(async () => {
@@ -196,36 +195,26 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
 
   // Handle token import
   const handleImportToken = (newToken: Token) => {
-    const exists = tokens.some(t => t.address.toLowerCase() === newToken.address.toLowerCase());
+    const exists = allAvailableTokens.some(t => t.address.toLowerCase() === newToken.address.toLowerCase());
     if (!exists) {
-      const updatedTokens = [...tokens, newToken];
-      setTokens(updatedTokens);
-      
-      // Save to localStorage
-      const imported = updatedTokens.filter(
-        t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
-      );
-      localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+      const updatedCustomTokens = [...customTokens, newToken];
+      setCustomTokens(updatedCustomTokens);
+      localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(updatedCustomTokens));
     }
   };
 
   // Handle token removal
   const handleRemoveToken = (tokenAddress: string) => {
-    const updatedTokens = tokens.filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
-    setTokens(updatedTokens);
-    
-    // Update localStorage
-    const imported = updatedTokens.filter(
-      t => !allTokens.some(at => at.address.toLowerCase() === t.address.toLowerCase())
-    );
-    localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(imported));
+    const updatedCustomTokens = customTokens.filter(t => t.address.toLowerCase() !== tokenAddress.toLowerCase());
+    setCustomTokens(updatedCustomTokens);
+    localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(updatedCustomTokens));
     
     // Reset selection if removed token was selected
     if (token0?.address.toLowerCase() === tokenAddress.toLowerCase()) {
-      setToken0(tokens.find(t => t.symbol === "WETH") || tokens[0]);
+      setToken0(allAvailableTokens.find(t => t.symbol === "WETH") || allAvailableTokens[0]);
     }
     if (token1?.address.toLowerCase() === tokenAddress.toLowerCase()) {
-      setToken1(tokens.find(t => t.symbol === "USDC") || tokens[1]);
+      setToken1(allAvailableTokens.find(t => t.symbol === "USDC") || allAvailableTokens[1]);
     }
   };
 
@@ -581,7 +570,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
         onClose={() => setShowToken0Select(false)}
         onSelect={handleToken0Select}
         selectedToken={token0 || undefined}
-        tokens={tokens}
+        customTokens={customTokens}
         onImportToken={handleImportToken}
         onRemoveToken={handleRemoveToken}
       />
@@ -591,7 +580,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
         onClose={() => setShowToken1Select(false)}
         onSelect={handleToken1Select}
         selectedToken={token1 || undefined}
-        tokens={tokens}
+        customTokens={customTokens}
         onImportToken={handleImportToken}
         onRemoveToken={handleRemoveToken}
       />
