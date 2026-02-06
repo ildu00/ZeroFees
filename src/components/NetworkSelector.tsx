@@ -57,13 +57,11 @@ const NetworkSelector = () => {
       {/* Dropdown Menu */}
       {isOpen && (
         <div className={cn(
-          "fixed sm:absolute top-auto sm:top-full right-3 sm:right-0 mt-2",
-          "w-[calc(100vw-24px)] sm:w-64 max-w-[280px]",
-          "bg-card border border-border/50 rounded-xl shadow-xl",
+          "fixed sm:absolute inset-x-3 sm:inset-x-auto sm:right-0 top-14 sm:top-full mt-0 sm:mt-2",
+          "sm:w-64 max-w-[320px] sm:max-w-none",
+          "bg-card border border-border/50 rounded-xl shadow-2xl",
           "z-[100] overflow-hidden animate-scale-in"
-        )}
-        style={{ top: 'calc(var(--header-height, 56px) + 8px)' }}
-        >
+        )}>
           {/* Header */}
           <div className="px-4 py-3 border-b border-border/30 bg-secondary/30">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
