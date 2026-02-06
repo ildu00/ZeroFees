@@ -58,7 +58,20 @@ const formatTronAddress = (address: string): string => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
-export const useTronLink = () => {
+interface UseTronLinkReturn {
+  isInstalled: boolean;
+  isConnected: boolean;
+  address: string | null;
+  balance: string | null;
+  isConnecting: boolean;
+  error: string | null;
+  tronWeb: TronWeb | null;
+  formattedAddress: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+}
+
+export const useTronLink = (): UseTronLinkReturn => {
   const [state, setState] = useState<TronLinkState>({
     isInstalled: false,
     isConnected: false,
