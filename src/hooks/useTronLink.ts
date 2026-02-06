@@ -210,7 +210,7 @@ export const useTronLink = () => {
     ...state,
     formattedAddress: state.address ? formatTronAddress(state.address) : null,
     connect,
-    disconnect,
+    disconnect: disconnect as () => Promise<void>,
   };
 };
 
