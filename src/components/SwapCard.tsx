@@ -119,9 +119,9 @@ const SwapCard = () => {
     if (currentChain.id === 'avalanche') {
       return avaxSwap;
     }
-    // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
-    return evmSwap;
-  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap, avaxSwap]);
+    // Default: EVM swap (Base, Ethereum, Arbitrum, Polygon, Optimism)
+    return evmSwapResult;
+  }, [chainType, currentChain.id, evmSwapResult, tronSwap, neoSwap, bnbSwap, avaxSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
