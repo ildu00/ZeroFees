@@ -115,9 +115,13 @@ const SwapCard = () => {
     if (currentChain.id === 'bsc') {
       return bnbSwap;
     }
+    // Avalanche → Trader Joe
+    if (currentChain.id === 'avalanche') {
+      return avaxSwap;
+    }
     // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
     return evmSwap;
-  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap]);
+  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap, avaxSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
