@@ -626,12 +626,12 @@ const Api = () => {
                   title="Get Swap Quote"
                   method="POST"
                   endpoint={`${baseUrl}/get-swap-quote`}
-                  description="Calculates the expected output amount for a token swap, including fees and price impact estimation."
+                  description="Calculates the expected output amount for a token swap. For non-Base chains, use the chain-specific endpoint: get-pancakeswap-quote (BSC), get-traderjoe-quote (Avalanche), get-sunswap-quote (TRON), get-neo-quote (NEO)."
                   parameters={[
                     { name: "action", type: "string", required: true, description: 'Must be "quote"' },
-                    { name: "tokenIn", type: "string", required: true, description: "Input token symbol (e.g., ETH, USDC, BRETT)" },
+                    { name: "tokenIn", type: "string", required: true, description: "Input token symbol (e.g., ETH, USDC, BNB)" },
                     { name: "tokenOut", type: "string", required: true, description: "Output token symbol" },
-                    { name: "amountIn", type: "string", required: true, description: "Input amount in wei (smallest unit)" },
+                    { name: "amountIn", type: "string", required: true, description: "Input amount in smallest unit (wei for EVM, sun for TRON)" },
                   ]}
                   requestBody={`{
   "action": "quote",
@@ -646,6 +646,34 @@ const Api = () => {
   "decimalsOut": 6
 }`}
                 />
+
+                <div className="glass-card p-6">
+                  <h4 className="text-sm font-semibold mb-3">Chain-Specific Quote Endpoints</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Chain</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Endpoint</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { chain: "Base", endpoint: "get-swap-quote" },
+                          { chain: "BNB Smart Chain", endpoint: "get-pancakeswap-quote" },
+                          { chain: "Avalanche", endpoint: "get-traderjoe-quote" },
+                          { chain: "TRON", endpoint: "get-sunswap-quote" },
+                          { chain: "NEO N3", endpoint: "get-neo-quote" },
+                        ].map((item) => (
+                          <tr key={item.chain} className="border-b border-border/20">
+                            <td className="py-2 px-3 font-medium">{item.chain}</td>
+                            <td className="py-2 px-3 font-mono text-primary text-xs">{`${baseUrl}/${item.endpoint}`}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
