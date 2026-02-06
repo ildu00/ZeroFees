@@ -22,6 +22,7 @@ const apiKeyRequestSchema = z.object({
 const tocItems = [
   { id: "base-url", label: "Base URL" },
   { id: "authentication", label: "Authentication" },
+  { id: "supported-chains", label: "Supported Chains" },
   { id: "swap-api", label: "Swap API" },
   { id: "pools-api", label: "Pools API" },
   { id: "wallet-api", label: "Wallet API" },
