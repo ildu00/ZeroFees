@@ -11,6 +11,7 @@ import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
 import { useNeoSwap, NEO_SWAP_TOKENS } from "@/hooks/useNeoSwap";
 import { useBnbSwap, BNB_TOKENS } from "@/hooks/useBnbSwap";
+import { useAvalancheSwap, AVAX_TOKENS } from "@/hooks/useAvalancheSwap";
 import { getTokensForChain, Token as ChainToken } from "@/config/tokens";
 import { toast } from "sonner";
 
