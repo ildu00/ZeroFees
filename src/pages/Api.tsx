@@ -994,37 +994,39 @@ const supabase = createClient(
   'YOUR_ANON_KEY'
 );
 
-// Get token prices
+// Get token prices (Base)
 async function getTokenPrices() {
   const { data, error } = await supabase.functions.invoke('get-swap-quote', {
     body: { action: 'prices' }
   });
-  
   if (error) throw error;
   return data.prices;
 }
 
-// Get swap quote
+// Get swap quote (Base)
 async function getSwapQuote(tokenIn, tokenOut, amountInWei) {
   const { data, error } = await supabase.functions.invoke('get-swap-quote', {
-    body: { 
-      action: 'quote',
-      tokenIn,
-      tokenOut,
-      amountIn: amountInWei
-    }
+    body: { action: 'quote', tokenIn, tokenOut, amountIn: amountInWei }
   });
-  
   if (error) throw error;
   return data;
 }
 
-// Usage
-const prices = await getTokenPrices();
-console.log('ETH Price:', prices.ETH);
+// Get pools for any chain
+async function getPools(chain = 'base') {
+  const { data, error } = await supabase.functions.invoke('get-uniswap-pools', {
+    body: { chain }  // 'base' | 'ethereum' | 'bsc' | 'avalanche' | 'tron' | 'neo' ...
+  });
+  if (error) throw error;
+  return data.pools;
+}
 
-const quote = await getSwapQuote('ETH', 'USDC', '1000000000000000000');
-console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
+// Usage
+const basePools = await getPools('base');
+const tronPools = await getPools('tron');
+const avaxPools = await getPools('avalanche');
+console.log('Base pools:', basePools.length);
+console.log('TRON pools:', tronPools.length);`} language="javascript" />
               </div>
             </div>
 
