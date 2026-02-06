@@ -19,7 +19,10 @@ const WalletButton = () => {
     error,
     address,
     connect, 
-    disconnect 
+    disconnect,
+    chainType,
+    nativeCurrencySymbol,
+    blockExplorerUrl,
   } = useWalletContext();
 
   const copyAddress = () => {
@@ -30,8 +33,17 @@ const WalletButton = () => {
   };
 
   const viewOnExplorer = () => {
-    if (address) {
-      window.open(`https://etherscan.io/address/${address}`, '_blank');
+    if (address && blockExplorerUrl) {
+      // Different explorers have different URL patterns
+      let explorerUrl = '';
+      if (chainType === 'tron') {
+        explorerUrl = `${blockExplorerUrl}/#/address/${address}`;
+      } else if (chainType === 'neo') {
+        explorerUrl = `${blockExplorerUrl}/address/${address}`;
+      } else {
+        explorerUrl = `${blockExplorerUrl}/address/${address}`;
+      }
+      window.open(explorerUrl, '_blank');
     }
   };
 
@@ -47,7 +59,7 @@ const WalletButton = () => {
             <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="font-mono text-xs sm:text-sm">{formattedAddress}</span>
             <span className="text-muted-foreground hidden sm:inline">
-              {balance} ETH
+              {balance} {nativeCurrencySymbol}
             </span>
             <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:inline" />
           </Button>
@@ -58,7 +70,7 @@ const WalletButton = () => {
         >
           <div className="px-2 py-1.5">
             <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="font-mono font-medium">{balance} ETH</p>
+            <p className="font-mono font-medium">{balance} {nativeCurrencySymbol}</p>
           </div>
           <DropdownMenuSeparator className="bg-border/50" />
           <DropdownMenuItem onClick={copyAddress} className="gap-2 cursor-pointer">
@@ -82,6 +94,14 @@ const WalletButton = () => {
     );
   }
 
+  // Show different button text based on chain type
+  const getConnectText = () => {
+    if (isConnecting) return 'Connecting...';
+    if (chainType === 'tron') return 'Connect TronLink';
+    if (chainType === 'neo') return 'Connect Neon';
+    return 'Connect Wallet';
+  };
+
   return (
     <Button 
       variant="glass" 
@@ -92,7 +112,7 @@ const WalletButton = () => {
     >
       <Wallet className="w-4 h-4" />
       <span className="hidden sm:inline">
-        {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        {getConnectText()}
       </span>
     </Button>
   );
