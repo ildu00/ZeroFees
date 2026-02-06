@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowDownUp, Settings, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TokenInput from "./TokenInput";
@@ -6,7 +6,10 @@ import TokenSelectModal, { Token } from "./TokenSelectModal";
 import SlippageSettingsModal from "./SlippageSettingsModal";
 import SwapConfirmationModal from "./SwapConfirmationModal";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useChain } from "@/contexts/ChainContext";
 import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
+import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
+import { getTokensForChain, Token as ChainToken } from "@/config/tokens";
 import { toast } from "sonner";
 
 // Storage key for imported tokens
@@ -27,38 +30,96 @@ const saveImportedTokens = (tokens: Token[]) => {
   localStorage.setItem(IMPORTED_TOKENS_KEY, JSON.stringify(tokens));
 };
 
-// Convert BASE_TOKENS to Token format for the modal
-const baseTokensList: Token[] = Object.values(BASE_TOKENS).map(t => ({
-  symbol: t.symbol,
-  name: t.name,
-  icon: t.icon,
-  balance: "0",
-  address: t.address,
-  price: 0,
-  decimals: t.decimals,
-}));
+// Convert chain tokens to Token format for the modal
+const chainTokensToModalTokens = (chainTokens: ChainToken[]): Token[] => {
+  return chainTokens.map(t => ({
+    symbol: t.symbol,
+    name: t.name,
+    icon: t.icon,
+    balance: "0",
+    address: t.address,
+    price: 0,
+    decimals: t.decimals,
+  }));
+};
 
 const SwapCard = () => {
-  const { isConnected, connect, isConnecting } = useWalletContext();
-  const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = useSwap();
+  const { isConnected, connect, isConnecting, chainType } = useWalletContext();
+  const { currentChain } = useChain();
+  
+  // Use appropriate swap hook based on chain type
+  const evmSwap = useSwap();
+  const tronSwap = useTronSwap();
+  
+  // Select the right swap hook
+  const swap = useMemo(() => {
+    if (chainType === 'tron') {
+      return {
+        prices: tronSwap.prices,
+        balances: tronSwap.balances,
+        quote: tronSwap.quote,
+        isLoadingQuote: tronSwap.isLoadingQuote,
+        isSwapping: tronSwap.isSwapping,
+        fetchQuote: tronSwap.fetchQuote,
+        executeSwap: async (
+          fromToken: any,
+          toToken: any,
+          fromValue: string,
+          amountOut: string,
+          slippage: number
+        ) => {
+          const minAmountOut = BigInt(Math.floor(parseFloat(amountOut) * (1 - slippage / 100))).toString();
+          return tronSwap.executeSwap(
+            fromToken.symbol,
+            toToken.symbol,
+            fromValue,
+            minAmountOut,
+            fromToken.decimals
+          );
+        },
+      };
+    }
+    // Default: EVM swap
+    return evmSwap;
+  }, [chainType, evmSwap, tronSwap]);
+
+  const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
+  
+  // Get tokens for current chain
+  const chainTokens = useMemo(() => {
+    return getTokensForChain(currentChain.id);
+  }, [currentChain.id]);
+
+  const tokensList = useMemo(() => {
+    return chainTokensToModalTokens(chainTokens);
+  }, [chainTokens]);
   
   const [fromValue, setFromValue] = useState("");
   const [toValue, setToValue] = useState("");
-  const [fromToken, setFromToken] = useState<Token>(baseTokensList[0]); // ETH
-  const [toToken, setToToken] = useState<Token>(baseTokensList[2]); // USDC
+  const [fromToken, setFromToken] = useState<Token>(tokensList[0]);
+  const [toToken, setToToken] = useState<Token>(tokensList.length > 2 ? tokensList[2] : tokensList[1] || tokensList[0]);
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectingFor, setSelectingFor] = useState<"from" | "to">("from");
-  const [slippage, setSlippage] = useState(0.1);
-  const [deadline, setDeadline] = useState(30); // 30 minutes default
+  const [slippage, setSlippage] = useState(0.5);
+  const [deadline, setDeadline] = useState(30);
   const [customTokens, setCustomTokens] = useState<Token[]>(() => getImportedTokens());
 
-  // All available tokens (base + imported)
-  const allTokens = [...baseTokensList, ...customTokens];
+  // All available tokens (chain + imported)
+  const allTokens = [...tokensList, ...customTokens];
+
+  // Reset tokens when chain changes
+  useEffect(() => {
+    if (tokensList.length > 0) {
+      setFromToken(tokensList[0]);
+      setToToken(tokensList.length > 2 ? tokensList[2] : tokensList[1] || tokensList[0]);
+      setFromValue("");
+      setToValue("");
+    }
+  }, [currentChain.id]);
 
   const handleImportToken = (token: Token) => {
-    // Check if token already exists
     if (allTokens.some(t => t.address.toLowerCase() === token.address.toLowerCase())) {
       toast.error("Token already exists");
       return;
@@ -76,7 +137,7 @@ const SwapCard = () => {
     toast.success("Token removed");
   };
 
-  // Update token prices and balances when they change
+  // Update token prices and balances
   useEffect(() => {
     if (Object.keys(prices).length > 0 || Object.keys(balances).length > 0) {
       setFromToken(prev => ({ 
@@ -92,60 +153,62 @@ const SwapCard = () => {
     }
   }, [prices, balances]);
 
-  // Detect in-app browser (MetaMask, Trust Wallet, etc.)
+  // Detect in-app browser
   const isInAppBrowser = typeof navigator !== 'undefined' && 
     /MetaMask|Trust|Coinbase|TokenPocket|imToken/i.test(navigator.userAgent);
 
-  // Fetch quote when input changes
   const [quoteKey, setQuoteKey] = useState(0);
-
-  // Track if we're showing estimate or actual quote
   const isEstimate = !quote || !quote.amountOut || isLoadingQuote;
 
-  // Calculate display value: use quote if available, otherwise estimate from prices
+  // Get token config for current chain
+  const getTokenConfig = useCallback((symbol: string) => {
+    if (chainType === 'tron') {
+      return TRON_TOKENS[symbol as keyof typeof TRON_TOKENS];
+    }
+    return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
+  }, [chainType]);
+
+  // Calculate display value
   const calculateToValue = useCallback(() => {
     if (!fromValue || parseFloat(fromValue) === 0) return "";
     
-    // If we have a valid quote, use it
     if (quote && quote.amountOut) {
-      const decimals = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+      const tokenConfig = getTokenConfig(toToken.symbol);
+      const decimals = tokenConfig?.decimals || toToken.decimals || 18;
       const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
       return amountOut.toFixed(6);
     }
     
-    // Otherwise, estimate from prices
     const fromPrice = prices[fromToken.symbol] || fromToken.price || 0;
     const toPrice = prices[toToken.symbol] || toToken.price || 0;
     if (!fromPrice || !toPrice) return "";
     const estimated = (parseFloat(fromValue) * fromPrice) / toPrice;
     return estimated.toFixed(6);
-  }, [fromValue, fromToken.symbol, toToken.symbol, prices, fromToken.price, toToken.price, quote, toToken.symbol]);
+  }, [fromValue, fromToken.symbol, toToken.symbol, prices, fromToken.price, toToken.price, quote, getTokenConfig]);
 
-  // Update toValue whenever calculation inputs change
   useEffect(() => {
     const newValue = calculateToValue();
     setToValue(newValue);
   }, [calculateToValue]);
 
-  // Fetch accurate quote from API
+  // Fetch quote
   useEffect(() => {
-    if (!fromValue || parseFloat(fromValue) === 0) {
-      return;
-    }
+    if (!fromValue || parseFloat(fromValue) === 0) return;
 
-    const decimalsIn = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
-    const decimalsOut = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS]?.decimals || 18;
+    const tokenInConfig = getTokenConfig(fromToken.symbol);
+    const tokenOutConfig = getTokenConfig(toToken.symbol);
+    const decimalsIn = tokenInConfig?.decimals || fromToken.decimals || 18;
+    const decimalsOut = tokenOutConfig?.decimals || toToken.decimals || 18;
 
-    // Use shorter debounce for in-app browsers
     const debounceMs = isInAppBrowser ? 50 : 150;
     const timer = setTimeout(() => {
       fetchQuote(fromToken.symbol, toToken.symbol, fromValue, decimalsIn, decimalsOut);
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [fromValue, fromToken.symbol, toToken.symbol, fetchQuote, quoteKey, isInAppBrowser]);
+  }, [fromValue, fromToken.symbol, toToken.symbol, fetchQuote, quoteKey, isInAppBrowser, getTokenConfig]);
 
-  // Auto-refresh quote every 15 seconds when there's a valid amount
+  // Auto-refresh quote
   const [refreshCountdown, setRefreshCountdown] = useState(15);
   
   useEffect(() => {
@@ -154,10 +217,8 @@ const SwapCard = () => {
       return;
     }
 
-    // Reset countdown when quote refreshes
     setRefreshCountdown(15);
 
-    // Countdown interval (every second)
     const countdownInterval = setInterval(() => {
       setRefreshCountdown(prev => {
         if (prev <= 1) {
@@ -171,7 +232,6 @@ const SwapCard = () => {
     return () => clearInterval(countdownInterval);
   }, [fromValue, fromToken.symbol, toToken.symbol]);
 
-  // Force refetch quote (for manual refresh)
   const refreshQuote = useCallback(() => {
     setQuoteKey(prev => prev + 1);
     setRefreshCountdown(15);
@@ -192,7 +252,6 @@ const SwapCard = () => {
   };
 
   const handleSelectToken = (token: Token) => {
-    // Find token in all tokens (base + custom)
     const foundToken = allTokens.find(t => t.address.toLowerCase() === token.address.toLowerCase());
     if (!foundToken) return;
 
@@ -220,27 +279,25 @@ const SwapCard = () => {
       toast.error("Enter an amount");
       return;
     }
-
     if (!quote) {
       toast.error("No quote available");
       return;
     }
-
     setConfirmOpen(true);
   };
 
   const handleSwap = async () => {
-    const fromTokenData = BASE_TOKENS[fromToken.symbol as keyof typeof BASE_TOKENS];
-    const toTokenData = BASE_TOKENS[toToken.symbol as keyof typeof BASE_TOKENS];
+    const fromTokenConfig = getTokenConfig(fromToken.symbol);
+    const toTokenConfig = getTokenConfig(toToken.symbol);
 
-    if (!fromTokenData || !toTokenData || !quote) {
+    if (!fromTokenConfig || !toTokenConfig || !quote) {
       toast.error("Invalid swap parameters");
       return;
     }
 
     const txHash = await executeSwap(
-      fromTokenData,
-      toTokenData,
+      fromTokenConfig,
+      toTokenConfig,
       fromValue,
       quote.amountOut,
       slippage
@@ -253,7 +310,6 @@ const SwapCard = () => {
     }
   };
 
-  // Calculate minimum received with slippage
   const getMinReceived = () => {
     if (!toValue || parseFloat(toValue) === 0) return "0";
     const amount = parseFloat(toValue);
@@ -261,14 +317,12 @@ const SwapCard = () => {
     return minAmount.toFixed(6);
   };
 
-  // Calculate exchange rate
   const exchangeRate = fromToken.price && toToken.price 
     ? (fromToken.price / toToken.price).toFixed(6) 
     : prices[fromToken.symbol] && prices[toToken.symbol]
     ? (prices[fromToken.symbol] / prices[toToken.symbol]).toFixed(6)
     : "...";
 
-  // Calculate fees display
   const networkFeePercent = quote?.fee ? (quote.fee / 10000).toFixed(2) : "0.30";
   const regraphFeePercent = "0.30";
   const totalFeePercent = (parseFloat(networkFeePercent) + parseFloat(regraphFeePercent)).toFixed(2);
@@ -281,6 +335,9 @@ const SwapCard = () => {
     : "0.00";
   const totalFeeUsd = (parseFloat(regraphFeeUsd) + parseFloat(networkFeeUsd)).toFixed(2);
 
+  // Get DEX name for current chain
+  const dexName = currentChain.dex.name;
+
   return (
     <>
       <div className="glass-card p-6 w-full max-w-md animate-scale-in">
@@ -289,7 +346,7 @@ const SwapCard = () => {
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Swap</h2>
             <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
-              Base
+              {currentChain.shortName}
             </span>
           </div>
           <button 
@@ -360,7 +417,7 @@ const SwapCard = () => {
               <span className="text-primary">${regraphFeeUsd} ({regraphFeePercent}%)</span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Network fee</span>
+              <span>{dexName} fee</span>
               <span>${networkFeeUsd} ({networkFeePercent}%)</span>
             </div>
             <div className="flex items-center justify-between text-xs font-medium">
@@ -412,7 +469,7 @@ const SwapCard = () => {
             onClick={connect}
             disabled={isConnecting}
           >
-            {isConnecting ? 'Connecting...' : 'Connect Wallet to Swap'}
+            {isConnecting ? 'Connecting...' : `Connect ${chainType === 'tron' ? 'TronLink' : 'Wallet'} to Swap`}
           </Button>
         )}
 
@@ -427,6 +484,7 @@ const SwapCard = () => {
           >
             ReGraph
           </a>
+          {' '}via {dexName}
         </p>
       </div>
 
