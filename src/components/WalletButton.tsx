@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Wallet, LogOut, Copy, ExternalLink, ChevronDown } from "lucide-react";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -25,6 +26,19 @@ const WalletButton = () => {
     blockExplorerUrl,
   } = useWalletContext();
 
+  const lastErrorRef = useRef<string | null>(null);
+
+  // Show error toast only when error changes
+  useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      toast.error(error);
+      lastErrorRef.current = error;
+    }
+    if (!error) {
+      lastErrorRef.current = null;
+    }
+  }, [error]);
+
   const copyAddress = () => {
     if (address) {
       navigator.clipboard.writeText(address);
@@ -46,10 +60,6 @@ const WalletButton = () => {
       window.open(explorerUrl, '_blank');
     }
   };
-
-  if (error) {
-    toast.error(error);
-  }
 
   if (isConnected && formattedAddress) {
     return (
