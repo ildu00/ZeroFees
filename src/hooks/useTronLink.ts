@@ -138,12 +138,28 @@ export const useTronLink = (): UseTronLinkReturn => {
       }
 
       // Request account access
-      const result = await window.tronLink.request({ method: 'tron_requestAccounts' });
-      
-      if (result) {
-        // Wait a bit for TronWeb to be ready
-        await new Promise(resolve => setTimeout(resolve, 500));
+      let result;
+      try {
+        result = await window.tronLink.request({ method: 'tron_requestAccounts' });
+      } catch (requestError) {
+        // User rejected or other error
+        console.error('TronLink request error:', requestError);
+        setState(prev => ({
+          ...prev,
+          isConnecting: false,
+          error: 'Connection rejected or TronLink unavailable',
+        }));
+        return;
+      }
 
+      // TronLink returns different things - we need to wait and check
+      // Wait for TronWeb to be ready with retries
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         const tronWeb = window.tronWeb;
         if (tronWeb && tronWeb.ready && tronWeb.defaultAddress?.base58) {
           const address = tronWeb.defaultAddress.base58;
@@ -156,10 +172,19 @@ export const useTronLink = (): UseTronLinkReturn => {
             tronWeb,
             isConnecting: false,
           }));
-        } else {
-          throw new Error('Failed to get TronLink address');
+          return;
         }
+        
+        attempts++;
       }
+      
+      // If we get here, connection failed
+      setState(prev => ({
+        ...prev,
+        isConnecting: false,
+        error: 'TronLink connection timed out. Please unlock your wallet and try again.',
+      }));
+      
     } catch (error) {
       console.error('TronLink connection error:', error);
       setState(prev => ({
