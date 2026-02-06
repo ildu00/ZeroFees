@@ -48,45 +48,8 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    // For EVM chains, we need to switch the wallet network
-    if (chain.type === 'evm' && typeof window !== 'undefined') {
-      const ethereum = (window as any).ethereum;
-      if (ethereum) {
-        try {
-          const hexChainId = `0x${(chain.chainId as number).toString(16)}`;
-          await ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: hexChainId }],
-          });
-        } catch (switchError: any) {
-          // Chain not added, try to add it
-          if (switchError.code === 4902) {
-            try {
-              await ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: `0x${(chain.chainId as number).toString(16)}`,
-                  chainName: chain.name,
-                  nativeCurrency: chain.nativeCurrency,
-                  rpcUrls: [chain.rpcUrl],
-                  blockExplorerUrls: [chain.blockExplorer],
-                }],
-              });
-            } catch (addError) {
-              console.error('Error adding chain:', addError);
-              toast.error(`Failed to add ${chain.name} network`);
-              return false;
-            }
-          } else {
-            console.error('Error switching chain:', switchError);
-            return false;
-          }
-        }
-      }
-    }
-
-    // For non-EVM chains, just update the context
-    // Wallet connection will be handled separately
+    // Just update the app context — wallet chain switching is handled
+    // at swap time to avoid AppKit modal interception issues
     setCurrentChain(chain);
     toast.success(`Switched to ${chain.name}`);
     return true;
