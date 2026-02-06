@@ -357,28 +357,17 @@ const ContractAddressRow = ({ name, address, isLast }: { name: string; address: 
         <code className="text-xs bg-secondary/50 px-2 py-1.5 rounded font-mono truncate max-w-[200px] sm:max-w-[240px] md:max-w-none">
           {address}
         </code>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleCopy}
-            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
-            title="Copy address"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-          </button>
-          <a
-            href={`https://basescan.org/address/${address}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
-            title="View on BaseScan"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-          </a>
-        </div>
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
+          title="Copy address"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-green-500" />
+          ) : (
+            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+        </button>
       </div>
     </div>
   );
