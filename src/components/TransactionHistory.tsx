@@ -103,7 +103,7 @@ const TransactionHistory = () => {
     } else {
       setTransactions([]);
     }
-  }, [address, isConnected]);
+  }, [address, isConnected, currentChain.id]);
 
   const openExplorer = (hash: string) => {
     const explorerUrl = blockExplorerUrl || currentChain.blockExplorer;
