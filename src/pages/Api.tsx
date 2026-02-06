@@ -1037,38 +1037,84 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
 
               <div className="glass-card p-6 overflow-hidden">
                 <p className="text-muted-foreground mb-4">
-                  Key contract addresses on Base mainnet:
+                  Key contract addresses per chain:
                 </p>
 
-                <div className="space-y-3">
-                  {[
-                    { name: "SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
-                    { name: "Pool Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
-                    { name: "WETH", address: "0x4200000000000000000000000000000000000006" },
-                    { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                  ].map((contract, i, arr) => (
-                    <ContractAddressRow 
-                      key={contract.name} 
-                      name={contract.name} 
-                      address={contract.address}
-                      isLast={i === arr.length - 1}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-4">
-                  <Button variant="outline" size="sm" asChild>
-                    <a 
-                      href="https://basescan.org" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      View on BaseScan
-                    </a>
-                  </Button>
-                </div>
+                {[
+                  {
+                    chain: "🔵 Base",
+                    explorer: "https://basescan.org",
+                    explorerName: "BaseScan",
+                    contracts: [
+                      { name: "SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
+                      { name: "Pool Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
+                      { name: "Position Manager", address: "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1" },
+                    ],
+                  },
+                  {
+                    chain: "⟠ Ethereum",
+                    explorer: "https://etherscan.io",
+                    explorerName: "Etherscan",
+                    contracts: [
+                      { name: "SwapRouter", address: "0xE592427A0AEce92De3Edee1F18E0157C05861564" },
+                      { name: "Pool Factory", address: "0x1F98431c8aD98523631AE4a59f267346ea31F984" },
+                      { name: "Position Manager", address: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" },
+                    ],
+                  },
+                  {
+                    chain: "🟡 BNB Smart Chain",
+                    explorer: "https://bscscan.com",
+                    explorerName: "BscScan",
+                    contracts: [
+                      { name: "PancakeSwap Router", address: "0x10ED43C718714eb63d5aA57B78B54704E256024E" },
+                      { name: "Pool Factory", address: "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73" },
+                      { name: "Position Manager", address: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364" },
+                    ],
+                  },
+                  {
+                    chain: "🔺 Avalanche",
+                    explorer: "https://snowtrace.io",
+                    explorerName: "Snowtrace",
+                    contracts: [
+                      { name: "Trader Joe Router", address: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4" },
+                      { name: "LB Factory", address: "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10" },
+                      { name: "LB Position Manager", address: "0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30" },
+                    ],
+                  },
+                  {
+                    chain: "♦️ TRON",
+                    explorer: "https://tronscan.org",
+                    explorerName: "TronScan",
+                    contracts: [
+                      { name: "SunSwap Router", address: "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax" },
+                      { name: "Position Manager", address: "TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF" },
+                    ],
+                  },
+                  {
+                    chain: "💚 NEO N3",
+                    explorer: "https://explorer.onegate.space",
+                    explorerName: "OneGate",
+                    contracts: [
+                      { name: "Flamingo DEX", address: "0xde3a4b093abbd07e9a69cdec88a54d9a1fe14975" },
+                    ],
+                  },
+                ].map((chainGroup) => (
+                  <div key={chainGroup.chain} className="mb-6 last:mb-0">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      {chainGroup.chain}
+                    </h4>
+                    <div className="space-y-1">
+                      {chainGroup.contracts.map((contract, i) => (
+                        <ContractAddressRow
+                          key={`${chainGroup.chain}-${contract.name}`}
+                          name={contract.name}
+                          address={contract.address}
+                          isLast={i === chainGroup.contracts.length - 1}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
