@@ -727,7 +727,7 @@ const Api = () => {
                   title="Get Wallet Transactions"
                   method="POST"
                   endpoint={`${baseUrl}/get-wallet-transactions`}
-                  description="Retrieves transaction history for a specific wallet address on Base network using BaseScan API."
+                  description="Retrieves transaction history for a specific wallet address. Currently supports Base network via BaseScan API. Multi-chain wallet history coming soon."
                   parameters={[
                     { name: "address", type: "string", required: true, description: "Wallet address (0x...)" },
                     { name: "page", type: "number", required: false, description: "Page number for pagination (default: 1)" },
