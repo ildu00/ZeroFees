@@ -205,7 +205,7 @@ const SwapCard = () => {
     
     if (quote && quote.amountOut) {
       const tokenConfig = getTokenConfig(toToken.symbol);
-      const decimals = tokenConfig?.decimals || toToken.decimals || 18;
+      const decimals = tokenConfig?.decimals ?? toToken.decimals ?? 18;
       const amountOut = parseFloat(quote.amountOut) / Math.pow(10, decimals);
       return amountOut.toFixed(6);
     }
@@ -228,8 +228,8 @@ const SwapCard = () => {
 
     const tokenInConfig = getTokenConfig(fromToken.symbol);
     const tokenOutConfig = getTokenConfig(toToken.symbol);
-    const decimalsIn = tokenInConfig?.decimals || fromToken.decimals || 18;
-    const decimalsOut = tokenOutConfig?.decimals || toToken.decimals || 18;
+    const decimalsIn = tokenInConfig?.decimals ?? fromToken.decimals ?? 18;
+    const decimalsOut = tokenOutConfig?.decimals ?? toToken.decimals ?? 18;
 
     const debounceMs = isInAppBrowser ? 50 : 150;
     const timer = setTimeout(() => {
