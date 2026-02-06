@@ -11,6 +11,7 @@ import Pools from "./pages/Pools";
 import Positions from "./pages/Positions";
 import Docs from "./pages/Docs";
 import Api from "./pages/Api";
+import Changelog from "./pages/Changelog";
 import NotFound from "./pages/NotFound";
 
 // Initialize AppKit
