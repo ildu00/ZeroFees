@@ -11,6 +11,7 @@ import { useSwap, BASE_TOKENS } from "@/hooks/useSwap";
 import { useTronSwap, TRON_TOKENS } from "@/hooks/useTronSwap";
 import { useNeoSwap, NEO_SWAP_TOKENS } from "@/hooks/useNeoSwap";
 import { useBnbSwap, BNB_TOKENS } from "@/hooks/useBnbSwap";
+import { useAvalancheSwap, AVAX_TOKENS } from "@/hooks/useAvalancheSwap";
 import { getTokensForChain, Token as ChainToken } from "@/config/tokens";
 import { toast } from "sonner";
 
@@ -54,6 +55,7 @@ const SwapCard = () => {
   const tronSwap = useTronSwap();
   const neoSwap = useNeoSwap();
   const bnbSwap = useBnbSwap();
+  const avaxSwap = useAvalancheSwap();
   
   // Select the right swap hook
   const swap = useMemo(() => {
@@ -113,9 +115,13 @@ const SwapCard = () => {
     if (currentChain.id === 'bsc') {
       return bnbSwap;
     }
+    // Avalanche → Trader Joe
+    if (currentChain.id === 'avalanche') {
+      return avaxSwap;
+    }
     // Default: EVM swap (Base, Ethereum, Arbitrum, etc.)
     return evmSwap;
-  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap]);
+  }, [chainType, currentChain.id, evmSwap, tronSwap, neoSwap, bnbSwap, avaxSwap]);
 
   const { prices, balances, quote, isLoadingQuote, isSwapping, fetchQuote, executeSwap } = swap;
   
@@ -204,6 +210,9 @@ const SwapCard = () => {
     }
     if (currentChain.id === 'bsc') {
       return BNB_TOKENS[symbol as keyof typeof BNB_TOKENS];
+    }
+    if (currentChain.id === 'avalanche') {
+      return AVAX_TOKENS[symbol as keyof typeof AVAX_TOKENS];
     }
     return BASE_TOKENS[symbol as keyof typeof BASE_TOKENS];
   }, [chainType, currentChain.id]);
