@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useChain } from "@/contexts/ChainContext";
 
 export interface Pool {
   id: string;
@@ -21,6 +22,7 @@ interface UseUniswapPoolsResult {
 }
 
 export const useUniswapPools = (): UseUniswapPoolsResult => {
+  const { currentChain } = useChain();
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,9 @@ export const useUniswapPools = (): UseUniswapPoolsResult => {
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('get-uniswap-pools');
+      const { data, error: fnError } = await supabase.functions.invoke('get-uniswap-pools', {
+        body: { chain: currentChain.id },
+      });
 
       if (fnError) {
         throw new Error(fnError.message);
@@ -49,7 +53,7 @@ export const useUniswapPools = (): UseUniswapPoolsResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentChain.id]);
 
   useEffect(() => {
     fetchPools();
