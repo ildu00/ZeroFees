@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNeoLine } from './useNeoLine';
 import { toast } from 'sonner';
 
+// Flamingo DEX contracts on NEO N3 MainNet
+const FLAMINGO_SWAP_ROUTER = '0xde3a4b093abbd07e9a69cdec88a54d9a1fe14975';
+const BNEO_CONTRACT = '0x48c40d4666f93408be1bef038b6722404d9a4c2a';
+
 // NEP-17 Token Configuration
 export const NEO_SWAP_TOKENS: Record<string, { symbol: string; name: string; address: string; decimals: number; icon: string }> = {
   NEO: { symbol: 'NEO', name: 'NEO', address: '0xef4073a0f2b305a38ec4050e4d3d28bc40ea63f5', decimals: 0, icon: '💚' },
@@ -28,6 +32,33 @@ export interface TokenPrices {
 
 export interface TokenBalances {
   [key: string]: string;
+}
+
+/**
+ * Build swap path for Flamingo DEX.
+ * Most tokens are paired against bNEO, so the route is typically:
+ * tokenIn → bNEO → tokenOut (if neither is bNEO)
+ * NEO is special: it must be wrapped to bNEO first via NeoBurger.
+ */
+function buildSwapPath(tokenInSymbol: string, tokenOutSymbol: string): string[] {
+  const tokenIn = NEO_SWAP_TOKENS[tokenInSymbol];
+  const tokenOut = NEO_SWAP_TOKENS[tokenOutSymbol];
+  if (!tokenIn || !tokenOut) return [];
+
+  const inAddr = tokenIn.address;
+  const outAddr = tokenOut.address;
+
+  // If NEO is involved, route through bNEO
+  const effectiveIn = tokenInSymbol === 'NEO' ? BNEO_CONTRACT : inAddr;
+  const effectiveOut = tokenOutSymbol === 'NEO' ? BNEO_CONTRACT : outAddr;
+
+  // Direct pair (one of them is bNEO)
+  if (effectiveIn === BNEO_CONTRACT || effectiveOut === BNEO_CONTRACT) {
+    return [effectiveIn, effectiveOut];
+  }
+
+  // Route through bNEO as intermediate
+  return [effectiveIn, BNEO_CONTRACT, effectiveOut];
 }
 
 export const useNeoSwap = () => {
@@ -65,8 +96,6 @@ export const useNeoSwap = () => {
 
     try {
       const newBalances: TokenBalances = {};
-
-      // Fetch balances for all NEO tokens
       const contracts = Object.entries(NEO_SWAP_TOKENS).map(([symbol, token]) => ({
         symbol,
         contract: token.address,
@@ -130,7 +159,7 @@ export const useNeoSwap = () => {
     }
   }, []);
 
-  // Execute swap (placeholder - Flamingo DEX integration needed)
+  // Execute swap via Flamingo DEX using NeoLine invoke
   const executeSwap = useCallback(async (
     tokenIn: string,
     tokenOut: string,
@@ -145,17 +174,119 @@ export const useNeoSwap = () => {
 
     setIsSwapping(true);
     try {
-      toast.info('NEO swap via Flamingo DEX coming soon');
-      // TODO: Implement Flamingo DEX swap via NeoLine invoke
-      return null;
+      const tokenInConfig = NEO_SWAP_TOKENS[tokenIn];
+      const tokenOutConfig = NEO_SWAP_TOKENS[tokenOut];
+      if (!tokenInConfig || !tokenOutConfig) {
+        throw new Error('Invalid token configuration');
+      }
+
+      // Calculate amounts in smallest units
+      const amountInSmallest = BigInt(Math.floor(parseFloat(amountIn) * Math.pow(10, decimalsIn))).toString();
+
+      // Special case: NEO is indivisible. Wrap NEO → bNEO first via NeoBurger transfer
+      if (tokenIn === 'NEO') {
+        toast.info('Step 1/2: Wrapping NEO → bNEO via NeoBurger...');
+        
+        // Transfer NEO to bNEO contract to receive bNEO
+        const wrapResult = await provider.invoke({
+          scriptHash: tokenInConfig.address, // NEO contract
+          operation: 'transfer',
+          args: [
+            { type: 'Address', value: address },
+            { type: 'Hash160', value: BNEO_CONTRACT },
+            { type: 'Integer', value: amountInSmallest },
+            { type: 'Any', value: null },
+          ],
+          signers: [{
+            account: address,
+            scopes: 16, // CalledByEntry + CustomContracts
+            allowedContracts: [tokenInConfig.address, BNEO_CONTRACT],
+          }],
+        });
+
+        if (!wrapResult || !wrapResult.txid) {
+          throw new Error('NEO → bNEO wrap failed');
+        }
+
+        toast.info('Step 2/2: Swapping bNEO via Flamingo DEX...');
+        
+        // Wait briefly for the wrap tx to be included
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+
+      // Build swap path
+      const swapPath = buildSwapPath(tokenIn, tokenOut);
+      if (swapPath.length < 2) {
+        throw new Error('Could not determine swap route');
+      }
+
+      // Deadline: current time + 10 minutes (in milliseconds)
+      const deadline = (Date.now() + 10 * 60 * 1000).toString();
+
+      // Build the paths array for the contract
+      const pathArgs = swapPath.map(p => ({ type: 'Hash160' as const, value: p }));
+
+      // Determine the effective amountIn for the router
+      // If NEO was wrapped, use bNEO amount (1 NEO = 1e8 bNEO units)
+      const routerAmountIn = tokenIn === 'NEO'
+        ? (BigInt(amountInSmallest) * BigInt(1e8)).toString()
+        : amountInSmallest;
+
+      // Build allowed contracts for signers
+      const allowedContracts = [
+        FLAMINGO_SWAP_ROUTER,
+        ...swapPath,
+      ];
+
+      // Invoke FlamingoSwapRouter.swapTokenInForTokenOut
+      const result = await provider.invoke({
+        scriptHash: FLAMINGO_SWAP_ROUTER,
+        operation: 'swapTokenInForTokenOut',
+        args: [
+          { type: 'Address', value: address },           // sender
+          { type: 'Integer', value: routerAmountIn },    // amountIn
+          { type: 'Integer', value: minAmountOut },      // amountOutMin
+          { type: 'Array', value: pathArgs },            // paths
+          { type: 'Integer', value: deadline },          // deadLine
+        ],
+        signers: [{
+          account: address,
+          scopes: 16, // CalledByEntry
+          allowedContracts,
+        }],
+      });
+
+      if (result && result.txid) {
+        toast.success(
+          `Swap submitted! TX: ${result.txid.substring(0, 10)}...`,
+          { duration: 8000 }
+        );
+
+        // Refresh balances after a delay
+        setTimeout(() => fetchBalances(), 10000);
+
+        return result.txid;
+      } else {
+        throw new Error('Transaction not confirmed');
+      }
     } catch (error: any) {
-      console.error('NEO swap error:', error);
-      toast.error('Swap failed: ' + (error.message || 'Unknown error'));
+      console.error('NEO Flamingo swap error:', error);
+      
+      let message = 'Swap failed';
+      if (error.type === 'CANCELED' || error.description?.includes('cancel')) {
+        message = 'Transaction cancelled by user';
+      } else if (error.description) {
+        message = error.description;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
+      toast.error(message);
       return null;
     } finally {
       setIsSwapping(false);
     }
-  }, [provider, address]);
+  }, [provider, address, fetchBalances]);
 
   // Auto-fetch prices
   useEffect(() => {
