@@ -716,14 +716,16 @@ const Api = () => {
                   title="Get Wallet Transactions"
                   method="POST"
                   endpoint={`${baseUrl}/get-wallet-transactions`}
-                  description="Retrieves transaction history for a specific wallet address. Currently supports Base network via BaseScan API. Multi-chain wallet history coming soon."
+                  description="Retrieves transaction history for a specific wallet address across all supported blockchains. For EVM chains uses RPC eth_getLogs, for TRON uses TronGrid API, for NEO N3 uses OneGate/NeoTube explorers."
                   parameters={[
-                    { name: "address", type: "string", required: true, description: "Wallet address (0x...)" },
+                    { name: "address", type: "string", required: true, description: "Wallet address (0x... for EVM, T... for TRON, N... for NEO)" },
+                    { name: "chain", type: "string", required: false, description: "Chain ID: base, ethereum, arbitrum, polygon, optimism, bsc, avalanche, tron, neo (default: base)" },
                     { name: "page", type: "number", required: false, description: "Page number for pagination (default: 1)" },
                     { name: "limit", type: "number", required: false, description: "Transactions per page (default: 50)" },
                   ]}
                   requestBody={`{
   "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE23",
+  "chain": "base",
   "page": 1,
   "limit": 50
 }`}
@@ -735,15 +737,50 @@ const Api = () => {
       "to": "0x...",
       "value": "1000000000000000000",
       "timestamp": "1703001234",
+      "type": "Transfer",
+      "token": "ETH",
       "gasUsed": "21000",
-      "gasPrice": "1000000000",
-      "isError": "0",
-      "methodId": "0xa9059cbb"
+      "gasPrice": "1000000000"
     }
   ],
+  "chain": "base",
   "total": 150
 }`}
                 />
+
+                <div className="glass-card p-6">
+                  <h4 className="text-sm font-semibold mb-3">Supported Chains for Wallet API</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Chain</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Address Format</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Data Source</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { chain: "Base", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "Ethereum", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "Arbitrum", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "Polygon", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "Optimism", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "BNB Smart Chain", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "Avalanche", format: "0x...", source: "RPC eth_getLogs" },
+                          { chain: "TRON", format: "T...", source: "TronGrid API" },
+                          { chain: "NEO N3", format: "N...", source: "OneGate / NeoTube" },
+                        ].map((item) => (
+                          <tr key={item.chain} className="border-b border-border/20">
+                            <td className="py-2 px-3 font-medium">{item.chain}</td>
+                            <td className="py-2 px-3 font-mono text-primary text-xs">{item.format}</td>
+                            <td className="py-2 px-3 text-muted-foreground">{item.source}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
