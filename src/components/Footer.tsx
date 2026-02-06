@@ -1,6 +1,6 @@
 const Footer = () => {
   return (
-    <footer className="mt-24 text-center">
+    <footer className="mt-24 pb-12 text-center">
       <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
         <a href="/docs" className="hover:text-foreground transition-colors">Docs</a>
         <a href="/changelog" className="hover:text-foreground transition-colors">Changelog</a>
