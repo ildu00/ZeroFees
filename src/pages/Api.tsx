@@ -22,6 +22,7 @@ const apiKeyRequestSchema = z.object({
 const tocItems = [
   { id: "base-url", label: "Base URL" },
   { id: "authentication", label: "Authentication" },
+  { id: "supported-chains", label: "Supported Chains" },
   { id: "swap-api", label: "Swap API" },
   { id: "pools-api", label: "Pools API" },
   { id: "wallet-api", label: "Wallet API" },
@@ -356,28 +357,17 @@ const ContractAddressRow = ({ name, address, isLast }: { name: string; address: 
         <code className="text-xs bg-secondary/50 px-2 py-1.5 rounded font-mono truncate max-w-[200px] sm:max-w-[240px] md:max-w-none">
           {address}
         </code>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleCopy}
-            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
-            title="Copy address"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-500" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-          </button>
-          <a
-            href={`https://basescan.org/address/${address}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
-            title="View on BaseScan"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-          </a>
-        </div>
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded-md bg-secondary/50 hover:bg-secondary border border-border/30 transition-colors"
+          title="Copy address"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-green-500" />
+          ) : (
+            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+        </button>
       </div>
     </div>
   );
@@ -493,7 +483,7 @@ const Api = () => {
               <span className="text-gradient">API Reference</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Complete API documentation for integrating with ZERO FEES DeFi services on Base network.
+              Complete API documentation for integrating with ZERO FEES DeFi services across 9 blockchain networks.
             </p>
           </div>
 
@@ -528,6 +518,62 @@ const Api = () => {
 }`} />
               </div>
 
+              {/* Supported Chains */}
+              <div id="supported-chains" className="glass-card p-6 mb-8 scroll-mt-28">
+                <h2 className="text-lg font-semibold mb-4">Supported Chains</h2>
+                <p className="text-muted-foreground mb-4">
+                  All endpoints accept an optional <code className="text-primary font-mono text-sm bg-secondary/50 px-1.5 py-0.5 rounded">chain</code> parameter to target a specific blockchain. Default: <code className="text-primary font-mono text-sm bg-secondary/50 px-1.5 py-0.5 rounded">base</code>.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/30">
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Chain ID</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Network</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">DEX</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Swaps</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Pools</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: "base", name: "Base", icon: "🔵", dex: "Uniswap V3", swaps: true, pools: true },
+                        { id: "ethereum", name: "Ethereum", icon: "⟠", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "arbitrum", name: "Arbitrum One", icon: "🔷", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "polygon", name: "Polygon", icon: "💜", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "optimism", name: "Optimism", icon: "🔴", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "bsc", name: "BNB Smart Chain", icon: "🟡", dex: "PancakeSwap", swaps: true, pools: true },
+                        { id: "avalanche", name: "Avalanche", icon: "🔺", dex: "Trader Joe", swaps: true, pools: true },
+                        { id: "tron", name: "TRON", icon: "♦️", dex: "SunSwap", swaps: true, pools: true },
+                        { id: "neo", name: "NEO N3", icon: "💚", dex: "Flamingo", swaps: true, pools: true },
+                      ].map((chain) => (
+                        <tr key={chain.id} className="border-b border-border/20">
+                          <td className="py-2 px-3 font-mono text-primary">{chain.id}</td>
+                          <td className="py-2 px-3">
+                            <span className="mr-1.5">{chain.icon}</span>{chain.name}
+                          </td>
+                          <td className="py-2 px-3 text-muted-foreground">{chain.dex}</td>
+                          <td className="py-2 px-3">
+                            {chain.swaps ? (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">✓</span>
+                            ) : (
+                              <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">Soon</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3">
+                            {chain.pools ? (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">✓</span>
+                            ) : (
+                              <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* API Sections */}
               <div className="space-y-8">
                 {/* Section: Swap */}
@@ -542,7 +588,10 @@ const Api = () => {
                   title="Get Token Prices"
                   method="POST"
                   endpoint={`${baseUrl}/get-swap-quote`}
-                  description="Fetches current USD prices for all supported tokens on Base network. Prices are sourced from CoinGecko."
+                  description="Fetches current USD prices for all supported tokens. Use chain-specific quote endpoints for non-Base networks (e.g. get-pancakeswap-quote for BSC, get-traderjoe-quote for Avalanche, get-sunswap-quote for TRON, get-neo-quote for NEO)."
+                  parameters={[
+                    { name: "action", type: "string", required: true, description: 'Must be "prices"' },
+                  ]}
                   requestBody={`{
   "action": "prices"
 }`}
@@ -552,14 +601,11 @@ const Api = () => {
     "WETH": 2986.65,
     "USDC": 0.999845,
     "BRETT": 0.00018221,
-    "DEGEN": 0.0089,
-    "AERO": 0.512766,
-    // ... 50+ tokens
+    // ... chain-specific tokens
   },
   "tokens": {
     "ETH": "0x0000000000000000000000000000000000000000",
     "WETH": "0x4200000000000000000000000000000000000006",
-    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     // ... token addresses
   }
 }`}
@@ -569,12 +615,12 @@ const Api = () => {
                   title="Get Swap Quote"
                   method="POST"
                   endpoint={`${baseUrl}/get-swap-quote`}
-                  description="Calculates the expected output amount for a token swap, including fees and price impact estimation."
+                  description="Calculates the expected output amount for a token swap. For non-Base chains, use the chain-specific endpoint: get-pancakeswap-quote (BSC), get-traderjoe-quote (Avalanche), get-sunswap-quote (TRON), get-neo-quote (NEO)."
                   parameters={[
                     { name: "action", type: "string", required: true, description: 'Must be "quote"' },
-                    { name: "tokenIn", type: "string", required: true, description: "Input token symbol (e.g., ETH, USDC, BRETT)" },
+                    { name: "tokenIn", type: "string", required: true, description: "Input token symbol (e.g., ETH, USDC, BNB)" },
                     { name: "tokenOut", type: "string", required: true, description: "Output token symbol" },
-                    { name: "amountIn", type: "string", required: true, description: "Input amount in wei (smallest unit)" },
+                    { name: "amountIn", type: "string", required: true, description: "Input amount in smallest unit (wei for EVM, sun for TRON)" },
                   ]}
                   requestBody={`{
   "action": "quote",
@@ -589,6 +635,34 @@ const Api = () => {
   "decimalsOut": 6
 }`}
                 />
+
+                <div className="glass-card p-6">
+                  <h4 className="text-sm font-semibold mb-3">Chain-Specific Quote Endpoints</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Chain</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Endpoint</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { chain: "Base", endpoint: "get-swap-quote" },
+                          { chain: "BNB Smart Chain", endpoint: "get-pancakeswap-quote" },
+                          { chain: "Avalanche", endpoint: "get-traderjoe-quote" },
+                          { chain: "TRON", endpoint: "get-sunswap-quote" },
+                          { chain: "NEO N3", endpoint: "get-neo-quote" },
+                        ].map((item) => (
+                          <tr key={item.chain} className="border-b border-border/20">
+                            <td className="py-2 px-3 font-medium">{item.chain}</td>
+                            <td className="py-2 px-3 font-mono text-primary text-xs">{`${baseUrl}/${item.endpoint}`}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -604,36 +678,27 @@ const Api = () => {
                   title="Get Liquidity Pools"
                   method="POST"
                   endpoint={`${baseUrl}/get-uniswap-pools`}
-                  description="Fetches top liquidity pools on Base network, including TVL, volume, and fee tier information."
+                  description="Fetches top liquidity pools for any supported chain, including TVL, volume, APR, and fee tier information. Data is sourced from GeckoTerminal and DeFiLlama."
                   requestBody={`{
-  "limit": 20,
-  "orderBy": "totalValueLockedUSD"
+  "chain": "base"  // or: ethereum, arbitrum, polygon, optimism, bsc, avalanche, tron, neo
 }`}
                   responseBody={`{
   "pools": [
     {
-      "id": "0x...",
-      "token0": {
-        "symbol": "WETH",
-        "name": "Wrapped Ether",
-        "decimals": "18"
-      },
-      "token1": {
-        "symbol": "USDC",
-        "name": "USD Coin",
-        "decimals": "6"
-      },
-      "feeTier": "500",
-      "totalValueLockedUSD": "45000000.00",
-      "volumeUSD": "120000000.00",
-      "token0Price": "2986.50",
-      "token1Price": "0.000335"
+      "id": "base_0x...",
+      "token0": { "symbol": "WETH", "icon": "https://..." },
+      "token1": { "symbol": "USDC", "icon": "https://..." },
+      "tvl": 45000000,
+      "apr": 12.5,
+      "volume24h": 8500000,
+      "fees24h": 25500,
+      "feeTier": 0.3
     }
-  ]
+  ],
+  "chain": "base"
 }`}
                   parameters={[
-                    { name: "limit", type: "number", required: false, description: "Number of pools to return (default: 20, max: 100)" },
-                    { name: "orderBy", type: "string", required: false, description: "Sort field: totalValueLockedUSD, volumeUSD" },
+                    { name: "chain", type: "string", required: false, description: "Chain ID: base, ethereum, arbitrum, polygon, optimism, bsc, avalanche, tron, neo (default: base)" },
                   ]}
                 />
               </div>
@@ -651,7 +716,7 @@ const Api = () => {
                   title="Get Wallet Transactions"
                   method="POST"
                   endpoint={`${baseUrl}/get-wallet-transactions`}
-                  description="Retrieves transaction history for a specific wallet address on Base network using BaseScan API."
+                  description="Retrieves transaction history for a specific wallet address. Currently supports Base network via BaseScan API. Multi-chain wallet history coming soon."
                   parameters={[
                     { name: "address", type: "string", required: true, description: "Wallet address (0x...)" },
                     { name: "page", type: "number", required: false, description: "Page number for pagination (default: 1)" },
@@ -691,7 +756,7 @@ const Api = () => {
 
               <div className="glass-card p-6">
                 <p className="text-muted-foreground mb-4">
-                  The following tokens are supported for swaps on Base network:
+                  The following tokens are supported for swaps on Base network. Each chain has its own set of native tokens — refer to the Supported Chains table above.
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
@@ -918,37 +983,39 @@ const supabase = createClient(
   'YOUR_ANON_KEY'
 );
 
-// Get token prices
+// Get token prices (Base)
 async function getTokenPrices() {
   const { data, error } = await supabase.functions.invoke('get-swap-quote', {
     body: { action: 'prices' }
   });
-  
   if (error) throw error;
   return data.prices;
 }
 
-// Get swap quote
+// Get swap quote (Base)
 async function getSwapQuote(tokenIn, tokenOut, amountInWei) {
   const { data, error } = await supabase.functions.invoke('get-swap-quote', {
-    body: { 
-      action: 'quote',
-      tokenIn,
-      tokenOut,
-      amountIn: amountInWei
-    }
+    body: { action: 'quote', tokenIn, tokenOut, amountIn: amountInWei }
   });
-  
   if (error) throw error;
   return data;
 }
 
-// Usage
-const prices = await getTokenPrices();
-console.log('ETH Price:', prices.ETH);
+// Get pools for any chain
+async function getPools(chain = 'base') {
+  const { data, error } = await supabase.functions.invoke('get-uniswap-pools', {
+    body: { chain }  // 'base' | 'ethereum' | 'bsc' | 'avalanche' | 'tron' | 'neo' ...
+  });
+  if (error) throw error;
+  return data.pools;
+}
 
-const quote = await getSwapQuote('ETH', 'USDC', '1000000000000000000');
-console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
+// Usage
+const basePools = await getPools('base');
+const tronPools = await getPools('tron');
+const avaxPools = await getPools('avalanche');
+console.log('Base pools:', basePools.length);
+console.log('TRON pools:', tronPools.length);`} language="javascript" />
               </div>
             </div>
 
@@ -961,38 +1028,84 @@ console.log('Expected USDC:', quote.amountOut);`} language="javascript" />
 
               <div className="glass-card p-6 overflow-hidden">
                 <p className="text-muted-foreground mb-4">
-                  Key contract addresses on Base mainnet:
+                  Key contract addresses per chain:
                 </p>
 
-                <div className="space-y-3">
-                  {[
-                    { name: "SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
-                    { name: "Pool Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
-                    { name: "WETH", address: "0x4200000000000000000000000000000000000006" },
-                    { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                  ].map((contract, i, arr) => (
-                    <ContractAddressRow 
-                      key={contract.name} 
-                      name={contract.name} 
-                      address={contract.address}
-                      isLast={i === arr.length - 1}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-4">
-                  <Button variant="outline" size="sm" asChild>
-                    <a 
-                      href="https://basescan.org" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      View on BaseScan
-                    </a>
-                  </Button>
-                </div>
+                {[
+                  {
+                    chain: "🔵 Base",
+                    explorer: "https://basescan.org",
+                    explorerName: "BaseScan",
+                    contracts: [
+                      { name: "SwapRouter02", address: "0x2626664c2603336E57B271c5C0b26F421741e481" },
+                      { name: "Pool Factory", address: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" },
+                      { name: "Position Manager", address: "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1" },
+                    ],
+                  },
+                  {
+                    chain: "⟠ Ethereum",
+                    explorer: "https://etherscan.io",
+                    explorerName: "Etherscan",
+                    contracts: [
+                      { name: "SwapRouter", address: "0xE592427A0AEce92De3Edee1F18E0157C05861564" },
+                      { name: "Pool Factory", address: "0x1F98431c8aD98523631AE4a59f267346ea31F984" },
+                      { name: "Position Manager", address: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" },
+                    ],
+                  },
+                  {
+                    chain: "🟡 BNB Smart Chain",
+                    explorer: "https://bscscan.com",
+                    explorerName: "BscScan",
+                    contracts: [
+                      { name: "PancakeSwap Router", address: "0x10ED43C718714eb63d5aA57B78B54704E256024E" },
+                      { name: "Pool Factory", address: "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73" },
+                      { name: "Position Manager", address: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364" },
+                    ],
+                  },
+                  {
+                    chain: "🔺 Avalanche",
+                    explorer: "https://snowtrace.io",
+                    explorerName: "Snowtrace",
+                    contracts: [
+                      { name: "Trader Joe Router", address: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4" },
+                      { name: "LB Factory", address: "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10" },
+                      { name: "LB Position Manager", address: "0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30" },
+                    ],
+                  },
+                  {
+                    chain: "♦️ TRON",
+                    explorer: "https://tronscan.org",
+                    explorerName: "TronScan",
+                    contracts: [
+                      { name: "SunSwap Router", address: "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax" },
+                      { name: "Position Manager", address: "TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF" },
+                    ],
+                  },
+                  {
+                    chain: "💚 NEO N3",
+                    explorer: "https://explorer.onegate.space",
+                    explorerName: "OneGate",
+                    contracts: [
+                      { name: "Flamingo DEX", address: "0xde3a4b093abbd07e9a69cdec88a54d9a1fe14975" },
+                    ],
+                  },
+                ].map((chainGroup) => (
+                  <div key={chainGroup.chain} className="mb-6 last:mb-0">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      {chainGroup.chain}
+                    </h4>
+                    <div className="space-y-1">
+                      {chainGroup.contracts.map((contract, i) => (
+                        <ContractAddressRow
+                          key={`${chainGroup.chain}-${contract.name}`}
+                          name={contract.name}
+                          address={contract.address}
+                          isLast={i === chainGroup.contracts.length - 1}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
