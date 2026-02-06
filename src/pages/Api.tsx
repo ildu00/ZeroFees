@@ -529,6 +529,62 @@ const Api = () => {
 }`} />
               </div>
 
+              {/* Supported Chains */}
+              <div id="supported-chains" className="glass-card p-6 mb-8 scroll-mt-28">
+                <h2 className="text-lg font-semibold mb-4">Supported Chains</h2>
+                <p className="text-muted-foreground mb-4">
+                  All endpoints accept an optional <code className="text-primary font-mono text-sm bg-secondary/50 px-1.5 py-0.5 rounded">chain</code> parameter to target a specific blockchain. Default: <code className="text-primary font-mono text-sm bg-secondary/50 px-1.5 py-0.5 rounded">base</code>.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/30">
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Chain ID</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Network</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">DEX</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Swaps</th>
+                        <th className="text-left py-2 px-3 text-muted-foreground font-medium">Pools</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: "base", name: "Base", icon: "🔵", dex: "Uniswap V3", swaps: true, pools: true },
+                        { id: "ethereum", name: "Ethereum", icon: "⟠", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "arbitrum", name: "Arbitrum One", icon: "🔷", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "polygon", name: "Polygon", icon: "💜", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "optimism", name: "Optimism", icon: "🔴", dex: "Uniswap V3", swaps: false, pools: true },
+                        { id: "bsc", name: "BNB Smart Chain", icon: "🟡", dex: "PancakeSwap", swaps: true, pools: true },
+                        { id: "avalanche", name: "Avalanche", icon: "🔺", dex: "Trader Joe", swaps: true, pools: true },
+                        { id: "tron", name: "TRON", icon: "♦️", dex: "SunSwap", swaps: true, pools: true },
+                        { id: "neo", name: "NEO N3", icon: "💚", dex: "Flamingo", swaps: true, pools: true },
+                      ].map((chain) => (
+                        <tr key={chain.id} className="border-b border-border/20">
+                          <td className="py-2 px-3 font-mono text-primary">{chain.id}</td>
+                          <td className="py-2 px-3">
+                            <span className="mr-1.5">{chain.icon}</span>{chain.name}
+                          </td>
+                          <td className="py-2 px-3 text-muted-foreground">{chain.dex}</td>
+                          <td className="py-2 px-3">
+                            {chain.swaps ? (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">✓</span>
+                            ) : (
+                              <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">Soon</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3">
+                            {chain.pools ? (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">✓</span>
+                            ) : (
+                              <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* API Sections */}
               <div className="space-y-8">
                 {/* Section: Swap */}
