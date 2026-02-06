@@ -436,7 +436,7 @@ const SwapCard = () => {
         onClose={() => setModalOpen(false)}
         onSelect={handleSelectToken}
         selectedToken={selectingFor === "from" ? fromToken : toToken}
-        tokens={allTokens}
+        customTokens={customTokens}
         onImportToken={handleImportToken}
         onRemoveToken={handleRemoveToken}
       />

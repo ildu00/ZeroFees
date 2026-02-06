@@ -581,7 +581,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
         onClose={() => setShowToken0Select(false)}
         onSelect={handleToken0Select}
         selectedToken={token0 || undefined}
-        tokens={tokens}
+        customTokens={customTokens}
         onImportToken={handleImportToken}
         onRemoveToken={handleRemoveToken}
       />
@@ -591,7 +591,7 @@ const AddLiquidityModal = ({ open, onClose, pool }: AddLiquidityModalProps) => {
         onClose={() => setShowToken1Select(false)}
         onSelect={handleToken1Select}
         selectedToken={token1 || undefined}
-        tokens={tokens}
+        customTokens={customTokens}
         onImportToken={handleImportToken}
         onRemoveToken={handleRemoveToken}
       />
