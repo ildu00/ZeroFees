@@ -42,7 +42,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         error: tronWallet.error,
         formattedAddress: tronWallet.formattedAddress,
         connect: tronWallet.connect,
-        disconnect: tronWallet.disconnect,
+        disconnect: async () => { await tronWallet.disconnect(); },
         walletProvider: undefined,
         chainType: 'tron',
         nativeCurrencySymbol: currentChain.nativeCurrency.symbol,
