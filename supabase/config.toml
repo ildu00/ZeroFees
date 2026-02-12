@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.get-wallet-transactions]
 verify_jwt = false
+
+[functions.resolve-geo]
+verify_jwt = false
