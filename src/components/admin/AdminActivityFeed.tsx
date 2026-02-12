@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet, MapPin, Clock, Languages, MonitorSmartphone, Link2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
 interface ActivityLog {
@@ -33,7 +33,6 @@ const eventColors: Record<string, string> = {
 
 const parseUserAgent = (ua: string | null) => {
   if (!ua) return { browser: '—', os: '—', device: 'desktop' as const };
-
   let browser = 'Unknown';
   if (ua.includes('Firefox/')) browser = 'Firefox';
   else if (ua.includes('Edg/')) browser = 'Edge';
@@ -61,6 +60,12 @@ const DeviceIcon = ({ device }: { device: 'mobile' | 'tablet' | 'desktop' }) => 
   return <Monitor className="w-3.5 h-3.5" />;
 };
 
+const InfoChip = ({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) => (
+  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/40 text-xs text-muted-foreground">
+    <Icon className="w-3 h-3 shrink-0" /> {children}
+  </span>
+);
+
 const AdminActivityFeed = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,15 +76,11 @@ const AdminActivityFeed = () => {
     setLoading(true);
     const from = p * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
-
-    const [{ data, count }, ] = await Promise.all([
-      supabase
-        .from('activity_logs')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to),
-    ]);
-
+    const { data, count } = await supabase
+      .from('activity_logs')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
     setLogs((data as ActivityLog[]) || []);
     setTotal(count ?? 0);
     setLoading(false);
@@ -109,9 +110,12 @@ const AdminActivityFeed = () => {
         <div className="space-y-2">
           {logs.map((log) => {
             const ua = parseUserAgent(log.user_agent);
-            const metadata = log.metadata || {};
+            const m = (log.metadata || {}) as Record<string, string | null>;
+            const geoStr = [m.city, m.region, m.country].filter(Boolean).join(', ');
+
             return (
               <div key={log.id} className="p-3 rounded-lg bg-secondary/30 border border-border/20 space-y-1.5">
+                {/* Row 1: event type + wallet + time */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge className={eventColors[log.event_type] || 'bg-muted text-muted-foreground'} variant="secondary">
                     {log.event_type.replace(/_/g, ' ')}
@@ -124,49 +128,42 @@ const AdminActivityFeed = () => {
                     {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                  {log.ip_address && (
-                    <span className="flex items-center gap-1">
-                      <Globe className="w-3 h-3" /> {log.ip_address}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1">
+
+                {/* Row 2: enriched info chips */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {geoStr && <InfoChip icon={MapPin}>{geoStr}</InfoChip>}
+                  {log.ip_address && <InfoChip icon={Globe}>{log.ip_address}</InfoChip>}
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/40 text-xs text-muted-foreground">
                     <DeviceIcon device={ua.device} /> {ua.browser} · {ua.os}
                   </span>
-                  <span className="hidden sm:inline">
-                    {format(new Date(log.created_at), 'MMM d, HH:mm:ss')}
-                  </span>
+                  {m.language && <InfoChip icon={Languages}>{m.language}</InfoChip>}
+                  {m.timezone && <InfoChip icon={Clock}>{m.timezone}</InfoChip>}
+                  {m.screen && <InfoChip icon={MonitorSmartphone}>{m.screen}</InfoChip>}
+                  {m.referrer && (
+                    <InfoChip icon={Link2}>
+                      {(() => { try { return new URL(m.referrer).hostname; } catch { return m.referrer; } })()}
+                    </InfoChip>
+                  )}
+                  {m.utm_source && <InfoChip icon={Link2}>utm: {m.utm_source}</InfoChip>}
                 </div>
-                {Object.keys(metadata).length > 0 && (
-                  <div className="text-xs text-muted-foreground/70 font-mono truncate">
-                    {Object.entries(metadata).map(([k, v]) => `${k}: ${v}`).join(' · ')}
-                  </div>
-                )}
+
+                {/* Row 3: timestamp */}
+                <div className="text-xs text-muted-foreground/60">
+                  {format(new Date(log.created_at), 'MMM d yyyy, HH:mm:ss')}
+                  {m.path && <span className="ml-2 font-mono">{m.path}</span>}
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/20">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0 || loading}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0 || loading}>
               <ChevronLeft className="w-4 h-4 mr-1" /> Prev
             </Button>
-            <span className="text-xs text-muted-foreground">
-              Page {page + 1} of {totalPages}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1 || loading}
-            >
+            <span className="text-xs text-muted-foreground">Page {page + 1} of {totalPages}</span>
+            <Button variant="ghost" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1 || loading}>
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
