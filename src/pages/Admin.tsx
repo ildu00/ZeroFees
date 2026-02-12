@@ -46,16 +46,16 @@ const Admin = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-card/60 border border-border/30 mb-6">
             <TabsTrigger value="activity" className="gap-1.5">
-              <Activity className="w-4 h-4" /> Activity
+              <Activity className="w-4 h-4" /> <span className="hidden sm:inline">Activity</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-1.5">
-              <BarChart3 className="w-4 h-4" /> Analytics
+              <BarChart3 className="w-4 h-4" /> <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
             <TabsTrigger value="apikeys" className="gap-1.5">
-              <Key className="w-4 h-4" /> API Keys
+              <Key className="w-4 h-4" /> <span className="hidden sm:inline">API Keys</span>
             </TabsTrigger>
             <TabsTrigger value="feedback" className="gap-1.5">
-              <MessageSquare className="w-4 h-4" /> Feedback
+              <MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Feedback</span>
             </TabsTrigger>
           </TabsList>
 
