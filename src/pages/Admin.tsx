@@ -31,7 +31,7 @@ const Admin = () => {
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-gradient font-bold text-lg">ZERO FEES</span>
-            <span className="text-muted-foreground text-sm">Admin Dashboard</span>
+            <span className="text-muted-foreground text-sm hidden sm:inline">Admin Dashboard</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground text-sm">{user.email}</span>
