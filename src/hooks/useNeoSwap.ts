@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNeoLine } from './useNeoLine';
+import { useWalletContext } from '@/contexts/WalletContext';
 import { toast } from 'sonner';
 
 // Flamingo DEX contracts on NEO N3 MainNet
@@ -62,13 +62,25 @@ function buildSwapPath(tokenInSymbol: string, tokenOutSymbol: string): string[] 
 }
 
 export const useNeoSwap = () => {
-  const { address, isConnected, provider } = useNeoLine();
+  const { address, isConnected } = useWalletContext();
+  const providerRef = useRef<any>(null);
   const [prices, setPrices] = useState<TokenPrices>({});
   const [balances, setBalances] = useState<TokenBalances>({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<NeoSwapQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+
+  // Initialize NeoLine provider lazily
+  const getProvider = useCallback(async () => {
+    if (providerRef.current) return providerRef.current;
+    const win = window as any;
+    if (win.NEOLineN3) {
+      providerRef.current = new win.NEOLineN3.Init();
+      return providerRef.current;
+    }
+    return null;
+  }, []);
 
   // Fetch token prices
   const fetchPrices = useCallback(async () => {
@@ -89,7 +101,13 @@ export const useNeoSwap = () => {
 
   // Fetch token balances via NeoLine
   const fetchBalances = useCallback(async () => {
-    if (!address || !provider) {
+    if (!address) {
+      setBalances({});
+      return;
+    }
+
+    const neoProvider = await getProvider();
+    if (!neoProvider) {
       setBalances({});
       return;
     }
@@ -103,7 +121,7 @@ export const useNeoSwap = () => {
       }));
 
       try {
-        const balanceResult = await provider.getBalance({
+        const balanceResult = await neoProvider.getBalance({
           address,
           contracts: contracts.map(c => c.contract),
         });
@@ -124,7 +142,7 @@ export const useNeoSwap = () => {
     } catch (error) {
       console.error('Error fetching NEO balances:', error);
     }
-  }, [address, provider]);
+  }, [address, getProvider]);
 
   // Fetch quote
   const fetchQuote = useCallback(async (
@@ -167,7 +185,8 @@ export const useNeoSwap = () => {
     minAmountOut: string,
     decimalsIn: number
   ): Promise<string | null> => {
-    if (!provider || !address) {
+    const neoProvider = await getProvider();
+    if (!neoProvider || !address) {
       toast.error('Please connect NeoLine wallet');
       return null;
     }
@@ -188,7 +207,7 @@ export const useNeoSwap = () => {
         toast.info('Step 1/2: Wrapping NEO → bNEO via NeoBurger...');
         
         // Transfer NEO to bNEO contract to receive bNEO
-        const wrapResult = await provider.invoke({
+        const wrapResult = await neoProvider.invoke({
           scriptHash: tokenInConfig.address, // NEO contract
           operation: 'transfer',
           args: [
@@ -239,7 +258,7 @@ export const useNeoSwap = () => {
       ];
 
       // Invoke FlamingoSwapRouter.swapTokenInForTokenOut
-      const result = await provider.invoke({
+      const result = await neoProvider.invoke({
         scriptHash: FLAMINGO_SWAP_ROUTER,
         operation: 'swapTokenInForTokenOut',
         args: [
@@ -286,7 +305,7 @@ export const useNeoSwap = () => {
     } finally {
       setIsSwapping(false);
     }
-  }, [provider, address, fetchBalances]);
+  }, [getProvider, address, fetchBalances]);
 
   // Auto-fetch prices
   useEffect(() => {
