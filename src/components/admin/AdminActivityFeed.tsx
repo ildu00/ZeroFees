@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet, MapPin, Clock, Languages, MonitorSmartphone, Link2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet, MapPin, Clock, Languages, MonitorSmartphone, Link2, Search, Filter, X } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
 interface ActivityLog {
@@ -72,21 +74,103 @@ const AdminActivityFeed = () => {
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const fetchLogs = async (p = page) => {
+  // Filter state
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
+  const [chainFilter, setChainFilter] = useState<string>('all');
+  const [deviceFilter, setDeviceFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Available filter options (fetched from DB)
+  const [eventTypes, setEventTypes] = useState<string[]>([]);
+  const [chains, setChains] = useState<string[]>([]);
+
+  // Fetch filter options once
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const [evRes, chRes] = await Promise.all([
+        supabase.from('activity_logs').select('event_type').order('event_type'),
+        supabase.from('activity_logs').select('chain').not('chain', 'is', null).order('chain'),
+      ]);
+      const uniqueEvents = [...new Set((evRes.data || []).map((r: any) => r.event_type))];
+      const uniqueChains = [...new Set((chRes.data || []).map((r: any) => r.chain))];
+      setEventTypes(uniqueEvents as string[]);
+      setChains(uniqueChains as string[]);
+    };
+    fetchOptions();
+  }, []);
+
+  const fetchLogs = useCallback(async (p = page) => {
     setLoading(true);
     const from = p * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
-    const { data, count } = await supabase
+
+    let query = supabase
       .from('activity_logs')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (eventTypeFilter !== 'all') {
+      query = query.eq('event_type', eventTypeFilter);
+    }
+    if (chainFilter !== 'all') {
+      if (chainFilter === 'none') {
+        query = query.is('chain', null);
+      } else {
+        query = query.eq('chain', chainFilter);
+      }
+    }
+    if (searchQuery.trim()) {
+      // Search in wallet_address and ip_address
+      query = query.or(`wallet_address.ilike.%${searchQuery.trim()}%,ip_address.ilike.%${searchQuery.trim()}%`);
+    }
+    if (dateFrom) {
+      query = query.gte('created_at', `${dateFrom}T00:00:00`);
+    }
+    if (dateTo) {
+      query = query.lte('created_at', `${dateTo}T23:59:59`);
+    }
+    if (deviceFilter !== 'all') {
+      // Device filter via user_agent pattern matching
+      if (deviceFilter === 'mobile') {
+        query = query.or('user_agent.ilike.%Mobile%,user_agent.ilike.%Android%');
+      } else if (deviceFilter === 'tablet') {
+        query = query.or('user_agent.ilike.%iPad%,user_agent.ilike.%Tablet%');
+      } else if (deviceFilter === 'desktop') {
+        query = query.not('user_agent', 'ilike', '%Mobile%').not('user_agent', 'ilike', '%iPad%').not('user_agent', 'ilike', '%Tablet%');
+      }
+    }
+
+    query = query.range(from, to);
+
+    const { data, count } = await query;
     setLogs((data as ActivityLog[]) || []);
     setTotal(count ?? 0);
     setLoading(false);
+  }, [page, eventTypeFilter, chainFilter, searchQuery, dateFrom, dateTo, deviceFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [eventTypeFilter, chainFilter, searchQuery, dateFrom, dateTo, deviceFilter]);
+
+  useEffect(() => {
+    fetchLogs(page);
+  }, [page, fetchLogs]);
+
+  const clearFilters = () => {
+    setEventTypeFilter('all');
+    setChainFilter('all');
+    setDeviceFilter('all');
+    setSearchQuery('');
+    setDateFrom('');
+    setDateTo('');
   };
 
-  useEffect(() => { fetchLogs(page); }, [page]);
+  const hasActiveFilters = eventTypeFilter !== 'all' || chainFilter !== 'all' || deviceFilter !== 'all' || searchQuery || dateFrom || dateTo;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const shortAddr = (addr: string | null) =>
@@ -98,14 +182,123 @@ const AdminActivityFeed = () => {
         <CardTitle className="text-lg">Recent Activity</CardTitle>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{total} events</span>
+          <Button
+            variant={showFilters ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="relative"
+          >
+            <Filter className="w-4 h-4" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
+            )}
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => fetchLogs(page)} disabled={loading}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
+        {/* Filters panel */}
+        {showFilters && (
+          <div className="mb-4 p-4 rounded-xl bg-secondary/30 border border-border/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-foreground">Filters</h3>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7 gap-1">
+                  <X className="w-3 h-3" /> Clear all
+                </Button>
+              )}
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by wallet address or IP..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-secondary/60 border-border/30"
+              />
+            </div>
+
+            {/* Filter row 1 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Event Type</label>
+                <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+                  <SelectTrigger className="bg-secondary/60 border-border/30">
+                    <SelectValue placeholder="All events" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    <SelectItem value="all">All events</SelectItem>
+                    {eventTypes.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Chain</label>
+                <Select value={chainFilter} onValueChange={setChainFilter}>
+                  <SelectTrigger className="bg-secondary/60 border-border/30">
+                    <SelectValue placeholder="All chains" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    <SelectItem value="all">All chains</SelectItem>
+                    <SelectItem value="none">No chain</SelectItem>
+                    {chains.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Device</label>
+                <Select value={deviceFilter} onValueChange={setDeviceFilter}>
+                  <SelectTrigger className="bg-secondary/60 border-border/30">
+                    <SelectValue placeholder="All devices" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    <SelectItem value="all">All devices</SelectItem>
+                    <SelectItem value="desktop">Desktop</SelectItem>
+                    <SelectItem value="mobile">Mobile</SelectItem>
+                    <SelectItem value="tablet">Tablet</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Date range */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">From date</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-secondary/60 border-border/30"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">To date</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="bg-secondary/60 border-border/30"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {logs.length === 0 && !loading && (
-          <p className="text-muted-foreground text-center py-8">No activity logged yet.</p>
+          <p className="text-muted-foreground text-center py-8">No activity found{hasActiveFilters ? ' matching filters' : ''}.</p>
         )}
         <div className="space-y-2">
           {logs.map((log) => {
