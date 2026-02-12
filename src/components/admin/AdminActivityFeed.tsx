@@ -5,7 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet, MapPin, Clock, Languages, MonitorSmartphone, Link2, Search, Filter, X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { RefreshCw, ChevronLeft, ChevronRight, Globe, Monitor, Smartphone, Tablet, MapPin, Clock, Languages, MonitorSmartphone, Link2, Search, Filter, X, CalendarIcon } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
 interface ActivityLog {
@@ -79,8 +82,8 @@ const AdminActivityFeed = () => {
   const [chainFilter, setChainFilter] = useState<string>('all');
   const [deviceFilter, setDeviceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
 
   // Available filter options (fetched from DB)
@@ -128,10 +131,12 @@ const AdminActivityFeed = () => {
       query = query.or(`wallet_address.ilike.%${searchQuery.trim()}%,ip_address.ilike.%${searchQuery.trim()}%`);
     }
     if (dateFrom) {
-      query = query.gte('created_at', `${dateFrom}T00:00:00`);
+      query = query.gte('created_at', dateFrom.toISOString());
     }
     if (dateTo) {
-      query = query.lte('created_at', `${dateTo}T23:59:59`);
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', end.toISOString());
     }
     if (deviceFilter !== 'all') {
       // Device filter via user_agent pattern matching
@@ -166,8 +171,8 @@ const AdminActivityFeed = () => {
     setChainFilter('all');
     setDeviceFilter('all');
     setSearchQuery('');
-    setDateFrom('');
-    setDateTo('');
+    setDateFrom(undefined);
+    setDateTo(undefined);
   };
 
   const hasActiveFilters = eventTypeFilter !== 'all' || chainFilter !== 'all' || deviceFilter !== 'all' || searchQuery || dateFrom || dateTo;
@@ -277,21 +282,57 @@ const AdminActivityFeed = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">From date</label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="bg-secondary/60 border-border/30"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-secondary/60 border-border/30",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-card border-border z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">To date</label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="bg-secondary/60 border-border/30"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-secondary/60 border-border/30",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-card border-border z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
