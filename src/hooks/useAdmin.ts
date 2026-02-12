@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -6,67 +6,57 @@ export const useAdmin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const checkAdminRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      if (error) {
-        console.error('Error checking admin role:', error);
-        return false;
-      }
-      return !!data;
-    } catch (e) {
-      console.error('Exception checking admin role:', e);
-      return false;
-    }
-  };
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    const init = async () => {
+    const checkRole = async (userId: string) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted) return;
-        
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-
-        if (currentUser) {
-          const admin = await checkAdminRole(currentUser.id);
-          if (mounted) setIsAdmin(admin);
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (error) {
+          console.error('useAdmin: role check error', error.message);
+          return false;
         }
+        return !!data;
       } catch (e) {
-        console.error('Error in admin init:', e);
-      } finally {
-        if (mounted) setLoading(false);
+        console.error('useAdmin: role check exception', e);
+        return false;
       }
     };
 
-    init();
+    const handleAuthChange = (user: User | null) => {
+      // Defer to escape Supabase's internal auth lock
+      setTimeout(async () => {
+        if (!mountedRef.current) return;
+        setUser(user);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!mounted) return;
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-
-        if (currentUser) {
-          const admin = await checkAdminRole(currentUser.id);
-          if (mounted) setIsAdmin(admin);
+        if (user) {
+          const admin = await checkRole(user.id);
+          if (mountedRef.current) {
+            setIsAdmin(admin);
+            setLoading(false);
+          }
         } else {
           setIsAdmin(false);
+          setLoading(false);
         }
+      }, 0);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleAuthChange(session?.user ?? null);
       }
     );
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
   }, []);
