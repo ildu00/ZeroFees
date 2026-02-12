@@ -77,6 +77,94 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          api_key: string
+          company: string | null
+          created_at: string
+          current_month_usage: number
+          email: string
+          id: string
+          is_active: boolean
+          monthly_limit: number
+          name: string
+          notes: string | null
+          request_id: string | null
+          usage_reset_at: string
+        }
+        Insert: {
+          api_key: string
+          company?: string | null
+          created_at?: string
+          current_month_usage?: number
+          email: string
+          id?: string
+          is_active?: boolean
+          monthly_limit?: number
+          name: string
+          notes?: string | null
+          request_id?: string | null
+          usage_reset_at?: string
+        }
+        Update: {
+          api_key?: string
+          company?: string | null
+          created_at?: string
+          current_month_usage?: number
+          email?: string
+          id?: string
+          is_active?: boolean
+          monthly_limit?: number
+          name?: string
+          notes?: string | null
+          request_id?: string | null
+          usage_reset_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "api_key_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_usage_logs: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          response_status: number | null
+          response_time_ms: number | null
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          response_status?: number | null
+          response_time_ms?: number | null
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          response_status?: number | null
+          response_time_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           created_at: string
