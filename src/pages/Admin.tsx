@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,7 +30,7 @@ const Admin = () => {
       <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-gradient font-bold text-lg">ZERO FEES</span>
+            <Link to="/" className="text-gradient font-bold text-lg hover:opacity-80 transition-opacity">ZERO FEES</Link>
             
           </div>
           <div className="flex items-center gap-3">
