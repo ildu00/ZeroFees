@@ -34,7 +34,7 @@ const Admin = () => {
             <span className="text-muted-foreground text-sm hidden sm:inline">Admin Dashboard</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-sm">{user.email}</span>
+            <span className="text-muted-foreground text-sm hidden sm:inline">{user.email}</span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-1" /> Logout
             </Button>
