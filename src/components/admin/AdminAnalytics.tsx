@@ -110,7 +110,7 @@ const AdminAnalytics = () => {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(0,0%,7%)', border: '1px solid hsl(0,0%,15%)', borderRadius: 8, color: 'hsl(0,0%,98%)' }} />
+                <Tooltip contentStyle={{ background: 'hsl(0,0%,7%)', border: '1px solid hsl(0,0%,15%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0,0%,98%)' }} labelStyle={{ color: 'hsl(0,0%,98%)' }} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
